@@ -1,3 +1,3 @@
 package config
 
-const SERVER_URL = ":8082"
+const SERVER_URL = ":8080"
