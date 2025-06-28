@@ -36,7 +36,7 @@ func (s *Service) Add(link string) string {
 	}
 	s.store.Add(url)
 
-	return s.makeUrl(hash)
+	return s.makeURL(hash)
 }
 
 func (s *Service) Get(hash string) (string, error) {
@@ -55,7 +55,7 @@ func NewService() *Service {
 	}
 }
 
-func (s *Service) makeUrl(hash string) string {
+func (s *Service) makeURL(hash string) string {
 	u := url.URL{
 		Scheme: "http",
 		Host:   s.config.Handlers.ServerAddr,

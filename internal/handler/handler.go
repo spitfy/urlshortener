@@ -2,7 +2,6 @@ package handler
 
 import (
 	"io"
-	"log"
 	"mime"
 	"net/http"
 
@@ -15,7 +14,6 @@ type Handler struct {
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	log.Println("==start==")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
 		w.WriteHeader(http.StatusBadRequest)

@@ -7,8 +7,6 @@ import (
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 )
 
-const SERVER_URL = ":8082"
-
 type Config struct {
 	Handlers handlerConf.Config
 }
