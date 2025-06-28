@@ -11,17 +11,17 @@ type Store struct {
 	s   map[string]string
 }
 
-type Url struct {
+type URL struct {
 	Link string
 	Hash string
 }
 
 var (
-	ErrGetUrlNotFound = errors.New("data not found")
+	ErrGetURLNotFound = errors.New("data not found")
 )
 
-func newErrGetUrlNotFound(hash string) error {
-	return fmt.Errorf("%w for n = %s", ErrGetUrlNotFound, hash)
+func newErrGetURLNotFound(hash string) error {
+	return fmt.Errorf("%w for n = %s", ErrGetURLNotFound, hash)
 }
 
 func NewStore() *Store {
@@ -31,7 +31,7 @@ func NewStore() *Store {
 	}
 }
 
-func (s *Store) Add(url Url) {
+func (s *Store) Add(url URL) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -45,7 +45,7 @@ func (s *Store) Get(hash string) (string, error) {
 	res, ok := s.s[hash]
 
 	if !ok {
-		return "", newErrGetUrlNotFound(hash)
+		return "", newErrGetURLNotFound(hash)
 	}
 
 	return res, nil
