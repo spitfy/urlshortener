@@ -7,30 +7,32 @@ import (
 	"net/http"
 )
 
+var store []byte
+
 func Get(w http.ResponseWriter, r *http.Request) {
+	log.Println("==start==")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	log.Println("==id==")
 	if id := r.PathValue("id"); len(id) == 0 || len(id) > 10 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	log.Println("==after==", string(store))
+	w.Header().Add("Location", string(store))
 	w.WriteHeader(http.StatusTemporaryRedirect)
-	w.Write([]byte("https://practicum.yandex.ru/"))
+	w.Write(store)
 }
 
 func Post(w http.ResponseWriter, r *http.Request) {
-	log.Println("==start==")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Println("==Content-Type==")
 
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "text/plain" {
@@ -40,14 +42,13 @@ func Post(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
-	log.Println("==Content-body==")
 
 	if err != nil || len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	log.Println("==end==")
+	store = body
 
 	w.WriteHeader(http.StatusCreated)
 }
