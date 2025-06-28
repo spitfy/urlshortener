@@ -5,29 +5,41 @@ import (
 	"log"
 	"mime"
 	"net/http"
+
+	"github.com/spitfy/urlshortener/internal/config"
+	"github.com/spitfy/urlshortener/internal/service"
 )
 
-var store []byte
+type Handler struct {
+	service *service.Service
+}
 
-func Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	log.Println("==start==")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Println("==id==")
-	if id := r.PathValue("id"); len(id) == 0 || len(id) > 10 {
+
+	hash := r.PathValue("hash")
+	if len(hash) == 0 || len(hash) > service.CharCnt {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Println("==after==", string(store))
-	w.Header().Add("Location", string(store))
+
+	link, err := h.service.Get(hash)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Add("Location", link)
 	w.WriteHeader(http.StatusTemporaryRedirect)
-	w.Write(store)
 }
 
-func Post(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)
@@ -48,7 +60,35 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	store = body
+	url := h.service.Add(string(body))
 
 	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(url))
+}
+
+func newHandler(s *service.Service) *Handler {
+	return &Handler{
+		service: s,
+	}
+}
+
+func Serve(cfg config.Config, service *service.Service) error {
+	h := newHandler(service)
+	router := newRouter(h)
+
+	server := &http.Server{
+		Addr:    cfg.Handlers.ServerAddr,
+		Handler: router,
+	}
+
+	return server.ListenAndServe()
+
+}
+
+func newRouter(h *Handler) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{hash}", h.Get)
+	mux.HandleFunc("POST /", h.Post)
+
+	return mux
 }
