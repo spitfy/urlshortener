@@ -30,7 +30,7 @@ type Service struct {
 
 func (s *Service) Add(link string) string {
 	hash := RandString(CharCnt)
-	url := repository.Url{
+	url := repository.URL{
 		Link: link,
 		Hash: hash,
 	}
