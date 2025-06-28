@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -29,11 +29,13 @@ func Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func Post(w http.ResponseWriter, r *http.Request) {
+	log.Println("==start==")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	log.Println("==Content-Type==")
 
 	if r.Header.Get("Content-Type") != "text/plain" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -42,13 +44,14 @@ func Post(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
+	log.Println("==Content-body==")
 
 	if err != nil || len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println(string(body))
+	log.Println("==end==")
 
 	w.WriteHeader(http.StatusCreated)
 }
