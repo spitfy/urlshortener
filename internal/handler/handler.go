@@ -3,13 +3,8 @@ package handler
 import (
 	"io"
 	"log"
+	"mime"
 	"net/http"
-	"sync"
-)
-
-var (
-	store = make(map[string]string)
-	mu    sync.RWMutex
 )
 
 func Get(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +32,8 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("==Content-Type==")
 
-	if r.Header.Get("Content-Type") != "text/plain" {
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "text/plain" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
