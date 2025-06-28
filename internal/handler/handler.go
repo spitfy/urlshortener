@@ -3,6 +3,12 @@ package handler
 import (
 	"io"
 	"net/http"
+	"sync"
+)
+
+var (
+	store = make(map[string]string)
+	mu    sync.RWMutex
 )
 
 func Get(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +40,8 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil || len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return

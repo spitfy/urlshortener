@@ -8,8 +8,16 @@ import (
 )
 
 func main() {
+	cfg := config.GetConfig()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{id}", handler.Get)
 	mux.HandleFunc("POST /", handler.Post)
-	http.ListenAndServe(config.SERVER_URL, mux)
+	http.ListenAndServe(cfg.Handlers.ServerAddr, mux)
 }
+
+// func run() error {
+// 	cfg := config.GetConfig()
+
+// 	if
+// }
