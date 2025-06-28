@@ -14,7 +14,7 @@ type Config struct {
 
 func GetConfig() Config {
 	cfg := Config{}
-	flag.StringVar(&cfg.Handlers.ServerAddr, "addr", ":8082", "address of HTTP server")
+	flag.StringVar(&cfg.Handlers.ServerAddr, "addr", ":8080", "address of HTTP server")
 
 	flag.Parse()
 

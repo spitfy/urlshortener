@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -46,6 +47,8 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	fmt.Println(string(body))
 
 	w.WriteHeader(http.StatusCreated)
 }
