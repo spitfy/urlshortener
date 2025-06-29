@@ -15,7 +15,7 @@ func main() {
 }
 
 func run() error {
-	cfg := config.GetConfig()
-	service := service.NewService()
+	cfg := config.GetConfig(true)
+	service := service.NewService(cfg)
 	return handler.Serve(cfg, service)
 }

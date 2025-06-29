@@ -13,6 +13,11 @@ type Handler struct {
 	service *service.Service
 }
 
+type URLShortener interface {
+	Get(w http.ResponseWriter, r *http.Request)
+	Post(w http.ResponseWriter, r *http.Request)
+}
+
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)

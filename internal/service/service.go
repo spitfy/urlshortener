@@ -48,10 +48,17 @@ func (s *Service) Get(hash string) (string, error) {
 	return url, nil
 }
 
-func NewService() *Service {
+func NewService(cfg config.Config) *Service {
 	return &Service{
 		store:  *repository.NewStore(),
-		config: config.GetConfig(),
+		config: cfg,
+	}
+}
+
+func NewMockService(cfg config.Config, r repository.Store) *Service {
+	return &Service{
+		store:  r,
+		config: cfg,
 	}
 }
 
