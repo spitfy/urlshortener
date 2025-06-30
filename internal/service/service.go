@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"net/url"
+	"strings"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -63,9 +64,16 @@ func NewMockService(cfg config.Config, r repository.Store) *Service {
 }
 
 func (s *Service) makeURL(hash string) string {
+	var addr string
+	if !strings.Contains(s.config.Handlers.ServerAddr, "localhost") {
+		addr = strings.Join([]string{"localhost", s.config.Handlers.ServerAddr}, "")
+	} else {
+		addr = s.config.Handlers.ServerAddr
+	}
+
 	u := url.URL{
 		Scheme: "http",
-		Host:   s.config.Handlers.ServerAddr,
+		Host:   addr,
 		Path:   "/",
 	}
 

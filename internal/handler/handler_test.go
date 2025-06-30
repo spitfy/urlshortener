@@ -110,7 +110,7 @@ func TestHandler_Get(t *testing.T) {
 		{
 			name:         "method not allowed",
 			method:       http.MethodPost,
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			hash:         "XXAABBOO",
 			location:     "",
 		},

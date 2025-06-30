@@ -5,6 +5,7 @@ import (
 	"mime"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/service"
 )
@@ -88,10 +89,10 @@ func Serve(cfg config.Config, service *service.Service) error {
 
 }
 
-func newRouter(h *Handler) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{hash}", h.Get)
-	mux.HandleFunc("POST /", h.Post)
+func newRouter(h *Handler) *chi.Mux {
+	r := chi.NewRouter()
+	r.Get("/{hash}", h.Get)
+	r.Post("/", h.Post)
 
-	return mux
+	return r
 }
