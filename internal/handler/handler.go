@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"log"
 	"mime"
 	"net/http"
 
@@ -64,7 +65,13 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := h.service.Add(string(body))
+	url, err := h.service.Add(string(body))
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatal(err)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(url))

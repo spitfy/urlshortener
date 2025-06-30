@@ -2,9 +2,9 @@ package service
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 	"net/url"
-	"strings"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -29,7 +29,7 @@ type Service struct {
 	config config.Config
 }
 
-func (s *Service) Add(link string) string {
+func (s *Service) Add(link string) (string, error) {
 	hash := RandString(CharCnt)
 	url := repository.URL{
 		Link: link,
@@ -37,7 +37,12 @@ func (s *Service) Add(link string) string {
 	}
 	s.store.Add(url)
 
-	return s.makeURL(hash)
+	link, err := s.makeURL(hash)
+	if err != nil {
+		return "", err
+	}
+
+	return link, nil
 }
 
 func (s *Service) Get(hash string) (string, error) {
@@ -63,19 +68,12 @@ func NewMockService(cfg config.Config, r repository.Store) *Service {
 	}
 }
 
-func (s *Service) makeURL(hash string) string {
-	var addr string
-	if !strings.Contains(s.config.Handlers.ServerAddr, "localhost") {
-		addr = strings.Join([]string{"localhost", s.config.Handlers.ServerAddr}, "")
-	} else {
-		addr = s.config.Handlers.ServerAddr
+func (s *Service) makeURL(hash string) (string, error) {
+	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
+
+	if err != nil {
+		return "", errors.New("can't create short url")
 	}
 
-	u := url.URL{
-		Scheme: "http",
-		Host:   addr,
-		Path:   "/",
-	}
-
-	return u.ResolveReference(&url.URL{Path: hash}).String()
+	return addr, nil
 }
