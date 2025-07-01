@@ -32,3 +32,20 @@ func TestService_makeURL(t *testing.T) {
 		})
 	}
 }
+
+func TestRandString(t *testing.T) {
+	tests := []struct {
+		name string
+		len  int
+		want int
+	}{
+		{"Six len", 6, 6},
+		{"Eight len", 8, 8},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := RandString(tt.len)
+			assert.Equal(t, tt.want, len(got), "Wrong result")
+		})
+	}
+}
