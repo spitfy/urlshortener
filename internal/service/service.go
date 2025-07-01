@@ -25,8 +25,13 @@ func RandString(n int) string {
 }
 
 type Service struct {
-	store  repository.Store
+	store  Storer
 	config config.Config
+}
+
+type Storer interface {
+	Add(url repository.URL)
+	Get(hash string) (string, error)
 }
 
 func (s *Service) Add(link string) (string, error) {
@@ -54,16 +59,9 @@ func (s *Service) Get(hash string) (string, error) {
 	return url, nil
 }
 
-func NewService(cfg config.Config) *Service {
+func NewService(cfg config.Config, store Storer) *Service {
 	return &Service{
-		store:  *repository.NewStore(),
-		config: cfg,
-	}
-}
-
-func NewMockService(cfg config.Config, r repository.Store) *Service {
-	return &Service{
-		store:  r,
+		store:  store,
 		config: cfg,
 	}
 }

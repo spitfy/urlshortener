@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	cfg = config.GetConfig(false)
+	cfg = *config.NewConfig().SetConfig()
 }
 
 func TestMain(m *testing.M) {
@@ -30,7 +30,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_Post(t *testing.T) {
-	handler := newHandler(service.NewService(cfg))
+	store := repository.NewStore()
+	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
 
 	tests := []struct {
@@ -83,8 +84,7 @@ func TestHandler_Post(t *testing.T) {
 func TestHandler_Get(t *testing.T) {
 	store := repository.NewStore()
 	store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
-
-	handler := newHandler(service.NewMockService(cfg, *store))
+	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(newRouter(handler))
 
 	tests := []struct {

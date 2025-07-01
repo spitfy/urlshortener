@@ -12,12 +12,12 @@ import (
 )
 
 type Handler struct {
-	service *service.Service
+	service ServiceShortener
 }
 
-type URLShortener interface {
-	Get(w http.ResponseWriter, r *http.Request)
-	Post(w http.ResponseWriter, r *http.Request)
+type ServiceShortener interface {
+	Add(link string) (string, error)
+	Get(hash string) (string, error)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +77,13 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(url))
 }
 
-func newHandler(s *service.Service) *Handler {
+func newHandler(s ServiceShortener) *Handler {
 	return &Handler{
 		service: s,
 	}
 }
 
-func Serve(cfg config.Config, service *service.Service) error {
+func Serve(cfg config.Config, service ServiceShortener) error {
 	h := newHandler(service)
 	router := newRouter(h)
 
@@ -93,7 +93,6 @@ func Serve(cfg config.Config, service *service.Service) error {
 	}
 
 	return server.ListenAndServe()
-
 }
 
 func newRouter(h *Handler) *chi.Mux {

@@ -12,15 +12,17 @@ type Config struct {
 	Service  serviceConf.Config
 }
 
-func GetConfig(parse bool) Config {
-	//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	cfg := Config{}
-	flag.StringVar(&cfg.Handlers.ServerAddr, "a", ":8080", "address of HTTP server")
-	flag.StringVar(&cfg.Service.ServerURL, "b", "http://localhost:8080", "URL of HTTP server")
+func (c *Config) SetConfig() *Config {
+	flag.StringVar(&c.Handlers.ServerAddr, "a", ":8080", "address of HTTP server")
+	flag.StringVar(&c.Service.ServerURL, "b", "http://localhost:8080", "URL of HTTP server")
+	return c
+}
 
-	if parse {
-		flag.Parse()
-	}
+func (c *Config) Parse() *Config {
+	flag.Parse()
+	return c
+}
 
-	return cfg
+func NewConfig() *Config {
+	return &Config{}
 }

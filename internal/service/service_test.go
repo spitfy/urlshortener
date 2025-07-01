@@ -10,8 +10,8 @@ import (
 
 func TestService_makeURL(t *testing.T) {
 	s := &Service{
-		store:  *repository.NewStore(),
-		config: config.GetConfig(false),
+		store:  repository.NewStore(),
+		config: *config.NewConfig().SetConfig(),
 	}
 
 	tests := []struct {
