@@ -65,16 +65,16 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := h.service.Add(string(body))
+	shortUrl, err := h.service.Add(string(body))
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Fatal(err)
+		log.Printf("Error saving url: %v", err)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(url))
+	w.Write([]byte(shortUrl))
 }
 
 func newHandler(s ServiceShortener) *Handler {
