@@ -65,7 +65,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortUrl, err := h.service.Add(string(body))
+	shortURL, err := h.service.Add(string(body))
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -74,7 +74,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortUrl))
+	w.Write([]byte(shortURL))
 }
 
 func newHandler(s ServiceShortener) *Handler {
