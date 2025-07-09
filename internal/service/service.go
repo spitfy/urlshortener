@@ -36,11 +36,11 @@ type Storer interface {
 
 func (s *Service) Add(link string) (string, error) {
 	hash := RandString(CharCnt)
-	url := repository.URL{
+	u := repository.URL{
 		Link: link,
 		Hash: hash,
 	}
-	s.store.Add(url)
+	s.store.Add(u)
 
 	link, err := s.makeURL(hash)
 	if err != nil {
@@ -51,12 +51,12 @@ func (s *Service) Add(link string) (string, error) {
 }
 
 func (s *Service) Get(hash string) (string, error) {
-	url, err := s.store.Get(hash)
+	get, err := s.store.Get(hash)
 	if err != nil {
 		return "", err
 	}
 
-	return url, nil
+	return get, nil
 }
 
 func NewService(cfg config.Config, store Storer) *Service {

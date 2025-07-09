@@ -133,7 +133,8 @@ func TestHandler_Get(t *testing.T) {
 					SetHeader("Content-Type", "text/plain").
 					Post(fmt.Sprintf("%s/%s", srv.URL, tt.hash))
 			default:
-				t.Fatalf("unsupported method %s", tt.method)
+				t.Errorf("unsupported method %s", tt.method)
+				return
 			}
 
 			assert.NoError(t, err, "error making HTTP request")

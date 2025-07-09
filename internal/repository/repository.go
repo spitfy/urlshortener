@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 )
@@ -14,14 +13,6 @@ type Store struct {
 type URL struct {
 	Link string
 	Hash string
-}
-
-var (
-	ErrGetURLNotFound = errors.New("data not found")
-)
-
-func newErrGetURLNotFound(hash string) error {
-	return fmt.Errorf("%w for n = %s", ErrGetURLNotFound, hash)
 }
 
 func NewStore() *Store {
@@ -45,7 +36,7 @@ func (s *Store) Get(hash string) (string, error) {
 	res, ok := s.s[hash]
 
 	if !ok {
-		return "", newErrGetURLNotFound(hash)
+		return "", fmt.Errorf("data not found for n = %s", hash)
 	}
 
 	return res, nil
