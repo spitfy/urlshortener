@@ -20,7 +20,7 @@ const (
 )
 
 func GetConfig() *Config {
-	var conf *Config = &Config{}
+	var conf = &Config{}
 	flag.StringVar(&conf.Handlers.ServerAddr, "a", DefaultServerAddr, "address of HTTP server")
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 
