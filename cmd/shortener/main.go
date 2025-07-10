@@ -16,7 +16,7 @@ func main() {
 }
 
 func run() error {
-	cfg := config.NewConfig().SetConfig().Parse()
+	cfg := config.GetConfig()
 	store := repository.NewStore()
 	s := service.NewService(*cfg, store)
 

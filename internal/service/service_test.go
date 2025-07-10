@@ -1,6 +1,7 @@
 package service
 
 import (
+	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 	"testing"
 
 	"github.com/spitfy/urlshortener/internal/config"
@@ -11,7 +12,7 @@ import (
 func TestService_makeURL(t *testing.T) {
 	s := &Service{
 		store:  repository.NewStore(),
-		config: *config.NewConfig().SetConfig(),
+		config: config.Config{Service: serviceConf.Config{ServerURL: config.DefaultServerURL}},
 	}
 
 	tests := []struct {

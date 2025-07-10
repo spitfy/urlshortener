@@ -2,6 +2,8 @@ package handler
 
 import (
 	"fmt"
+	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
+	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,12 +18,11 @@ import (
 
 var (
 	srv *httptest.Server
-	cfg config.Config
+	cfg config.Config = config.Config{
+		Handlers: handlerConf.Config{ServerAddr: config.DefaultServerAddr},
+		Service:  serviceConf.Config{ServerURL: config.DefaultServerURL},
+	}
 )
-
-func init() {
-	cfg = *config.NewConfig().SetConfig()
-}
 
 func TestMain(m *testing.M) {
 	code := m.Run()
