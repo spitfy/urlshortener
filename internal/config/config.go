@@ -26,12 +26,3 @@ func GetConfig() *Config {
 
 	return conf
 }
-
-func (c *Config) Parse() *Config {
-	flag.Parse()
-	return c
-}
-
-func NewConfig() *Config {
-	return &Config{}
-}
