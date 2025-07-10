@@ -2,7 +2,9 @@ package config
 
 import (
 	"flag"
+	"log"
 
+	"github.com/caarlos0/env/v6"
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 )
@@ -23,6 +25,10 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 
 	flag.Parse()
+
+	if err := env.Parse(conf); err != nil {
+		log.Fatal(err)
+	}
 
 	return conf
 }
