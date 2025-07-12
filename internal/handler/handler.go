@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/spitfy/urlshortener/internal/logger"
 	"io"
 	"log"
 	"mime"
@@ -36,7 +37,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	link, err := h.service.Get(hash)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 
@@ -58,7 +59,9 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	if err != nil || len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -74,7 +77,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortURL))
+	_, _ = w.Write([]byte(shortURL))
 }
 
 func newHandler(s ServiceShortener) *Handler {
@@ -96,9 +99,13 @@ func Serve(cfg config.Config, service ServiceShortener) error {
 }
 
 func newRouter(h *Handler) *chi.Mux {
+	l, err := logger.Initialize("info")
+	if err != nil {
+		log.Fatal(err)
+	}
 	r := chi.NewRouter()
-	r.Get("/{hash}", h.Get)
-	r.Post("/", h.Post)
+	r.Get("/{hash}", l.RequestLogger(h.Get))
+	r.Post("/", l.RequestLogger(h.Post))
 
 	return r
 }
