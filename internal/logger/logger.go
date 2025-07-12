@@ -42,7 +42,7 @@ func Initialize(level string) (*Logger, error) {
 
 // Сведения о запросах должны содержать URI, метод запроса и время, затраченное на его выполнение.
 // Сведения об ответах должны содержать код статуса и размер содержимого ответа.
-func (l *Logger) RequestLogger(h http.HandlerFunc) http.HandlerFunc {
+func (l *Logger) LogInfo(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lw := loggingResponseWriter{
 			ResponseWriter: w,

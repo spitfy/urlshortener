@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/spitfy/urlshortener/internal/logger"
 	"io"
 	"log"
 	"mime"
@@ -19,6 +18,10 @@ type Handler struct {
 type ServiceShortener interface {
 	Add(link string) (string, error)
 	Get(hash string) (string, error)
+}
+
+type RequestLogger interface {
+	LogInfo(h http.HandlerFunc) http.HandlerFunc
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -86,9 +89,9 @@ func newHandler(s ServiceShortener) *Handler {
 	}
 }
 
-func Serve(cfg config.Config, service ServiceShortener) error {
+func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 	h := newHandler(service)
-	router := newRouter(h)
+	router := newRouter(h, l)
 
 	server := &http.Server{
 		Addr:    cfg.Handlers.ServerAddr,
@@ -98,14 +101,10 @@ func Serve(cfg config.Config, service ServiceShortener) error {
 	return server.ListenAndServe()
 }
 
-func newRouter(h *Handler) *chi.Mux {
-	l, err := logger.Initialize("info")
-	if err != nil {
-		log.Fatal(err)
-	}
+func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
-	r.Get("/{hash}", l.RequestLogger(h.Get))
-	r.Post("/", l.RequestLogger(h.Post))
+	r.Get("/{hash}", l.LogInfo(h.Get))
+	r.Post("/", l.LogInfo(h.Post))
 
 	return r
 }
