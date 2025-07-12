@@ -13,7 +13,7 @@ import (
 type Config struct {
 	Handlers handlerConf.Config
 	Service  serviceConf.Config
-	Logger   *loggerConf.Config
+	Logger   loggerConf.Config
 }
 
 const (
