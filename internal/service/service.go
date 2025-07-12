@@ -35,6 +35,10 @@ type Storer interface {
 }
 
 func (s *Service) Add(link string) (string, error) {
+	if !isURL(link) {
+		return "", errors.New("invalid url")
+	}
+
 	hash := RandString(CharCnt)
 	u := repository.URL{
 		Link: link,
@@ -74,4 +78,9 @@ func (s *Service) makeURL(hash string) (string, error) {
 	}
 
 	return addr, nil
+}
+
+func isURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }

@@ -50,3 +50,23 @@ func TestRandString(t *testing.T) {
 		})
 	}
 }
+
+func Test_isURL(t *testing.T) {
+	type args struct {
+		str string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"success", args{"http://google.com"}, true},
+		{"fail", args{"google.com"}, false},
+		{"empty", args{" "}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, isURL(tt.args.str), "isURL(%v)", tt.args.str)
+		})
+	}
+}
