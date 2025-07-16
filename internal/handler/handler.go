@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	models "github.com/spitfy/urlshortener/internal/model"
 	"io"
 	"log"
 	"mime"
@@ -83,6 +85,42 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(shortURL))
 }
 
+func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var req models.Request
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	link, err := h.service.Add(req.URL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	res := models.Response{Result: link}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 func newHandler(s ServiceShortener) *Handler {
 	return &Handler{
 		service: s,
@@ -104,6 +142,7 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/{hash}", l.LogInfo(h.Get))
+	r.Post("/api/shorten", l.LogInfo(h.ShortenURL))
 	r.Post("/", l.LogInfo(h.Post))
 
 	return r
