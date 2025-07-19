@@ -142,7 +142,7 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/{hash}", l.LogInfo(h.Get))
-	r.Post("/api/shorten", l.LogInfo(h.ShortenURL))
+	r.Post("/api/shorten", gzipMiddleware(l.LogInfo(h.ShortenURL)))
 	r.Post("/", l.LogInfo(h.Post))
 
 	return r
