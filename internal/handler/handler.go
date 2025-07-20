@@ -27,8 +27,9 @@ type RequestLogger interface {
 }
 
 var allowedContent = map[string]bool{
-	"text/plain":       true,
-	"application/json": true,
+	"text/plain":         true,
+	"application/json":   true,
+	"application/x-gzip": true,
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
