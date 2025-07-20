@@ -26,6 +26,11 @@ type RequestLogger interface {
 	LogInfo(h http.HandlerFunc) http.HandlerFunc
 }
 
+var allowedContent = map[string]bool{
+	"text/plain":       true,
+	"application/json": true,
+}
+
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
@@ -58,7 +63,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if err != nil || mediaType != "text/plain" {
+	if err != nil || !allowedContent[mediaType] {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
