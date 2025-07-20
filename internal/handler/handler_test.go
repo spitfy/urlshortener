@@ -30,7 +30,9 @@ var (
 
 func TestMain(m *testing.M) {
 	code := m.Run()
-	srv.Close()
+	if srv != nil {
+		srv.Close()
+	}
 	os.Exit(code)
 }
 
