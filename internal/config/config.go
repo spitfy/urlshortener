@@ -19,11 +19,11 @@ type Config struct {
 }
 
 const (
-	DefaultServerAddr  string = ":8080"
-	DefaultServerURL   string = "http://localhost:8080"
-	DefaultLogLevel    string = "info"
-	DefaultFileStorage string = "."
-	DefaultFileName    string = "links.json"
+	DefaultServerAddr      string = ":8080"
+	DefaultServerURL       string = "http://localhost:8080"
+	DefaultLogLevel        string = "info"
+	DefaultFileStorage     string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"
+	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
 )
 
 func GetConfig() *Config {
@@ -32,7 +32,6 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
 	flag.StringVar(&conf.FileStorage.FileStoragePath, "f", DefaultFileStorage, "file storage path")
-	flag.StringVar(&conf.FileStorage.FileStorageName, "fn", DefaultFileName, "file storage name")
 
 	flag.Parse()
 

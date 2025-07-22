@@ -36,12 +36,11 @@ func NewMockStore() *Store {
 }
 
 func NewStore(config *config.Config) *Store {
-	fullPath := filepath.Join(config.FileStorage.FileStoragePath, config.FileStorage.FileStorageName)
-	dir := filepath.Dir(fullPath)
+	dir := filepath.Dir(config.FileStorage.FileStoragePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		panic(fmt.Errorf("failed to create storage directory: %w", err))
 	}
-	f, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.OpenFile(config.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}

@@ -4,23 +4,27 @@ import (
 	"github.com/spitfy/urlshortener/internal/config"
 	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
-	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
 )
 
 var cfg = config.Config{
-	FileStorage: repoConf.Config{
-		FileStorageName: config.DefaultFileName,
-		FileStoragePath: config.DefaultFileStorage,
-	},
+	FileStorage: repoConf.Config{FileStoragePath: config.DefaultFileStorageTest},
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	if err := os.Remove(cfg.FileStorage.FileStoragePath); err != nil {
+		log.Println(err)
+	}
+	os.Exit(code)
 }
 
 func TestStore_Add(t *testing.T) {
-	fullPath := filepath.Join(cfg.FileStorage.FileStoragePath, cfg.FileStorage.FileStorageName)
-	f, _ := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
+	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	var store = &Store{
 		mux:  &sync.RWMutex{},
 		s:    make(map[string]link),
@@ -42,8 +46,7 @@ func TestStore_Add(t *testing.T) {
 }
 
 func TestNewStore(t *testing.T) {
-	fullPath := filepath.Join(cfg.FileStorage.FileStoragePath, cfg.FileStorage.FileStorageName)
-	f, _ := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
+	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	var store = &Store{
 		mux:  &sync.RWMutex{},
 		s:    map[string]link{"ASDQWE23": {"https://github.com/", "1"}},

@@ -8,6 +8,7 @@ import (
 	models "github.com/spitfy/urlshortener/internal/model"
 	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,12 +25,9 @@ import (
 var (
 	srv *httptest.Server
 	cfg = config.Config{
-		Handlers: handlerConf.Config{ServerAddr: config.DefaultServerAddr},
-		Service:  serviceConf.Config{ServerURL: config.DefaultServerURL},
-		FileStorage: repoConf.Config{
-			FileStorageName: config.DefaultFileName,
-			FileStoragePath: config.DefaultFileStorage,
-		},
+		Handlers:    handlerConf.Config{ServerAddr: config.DefaultServerAddr},
+		Service:     serviceConf.Config{ServerURL: config.DefaultServerURL},
+		FileStorage: repoConf.Config{FileStoragePath: config.DefaultFileStorageTest},
 	}
 )
 
@@ -37,6 +35,9 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	if srv != nil {
 		srv.Close()
+	}
+	if err := os.Remove(cfg.FileStorage.FileStoragePath); err != nil {
+		log.Println(err)
 	}
 	os.Exit(code)
 }
