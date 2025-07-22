@@ -6,6 +6,7 @@ import (
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 	"github.com/spitfy/urlshortener/internal/logger"
 	models "github.com/spitfy/urlshortener/internal/model"
+	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 	"net/http"
 	"net/http/httptest"
@@ -25,6 +26,10 @@ var (
 	cfg = config.Config{
 		Handlers: handlerConf.Config{ServerAddr: config.DefaultServerAddr},
 		Service:  serviceConf.Config{ServerURL: config.DefaultServerURL},
+		FileStorage: repoConf.Config{
+			FileStorageName: config.DefaultFileName,
+			FileStoragePath: config.DefaultFileStorage,
+		},
 	}
 )
 
@@ -37,7 +42,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_Post(t *testing.T) {
-	store := repository.NewStore()
+	store := repository.NewStore(&cfg)
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
 
@@ -89,8 +94,8 @@ func TestHandler_Post(t *testing.T) {
 }
 
 func TestHandler_Get(t *testing.T) {
-	store := repository.NewStore()
-	store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
+	store := repository.NewStore(&cfg)
+	_ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
 	l := logger.InitMock()
 	srv = httptest.NewServer(newRouter(handler, l))
@@ -161,7 +166,7 @@ func TestHandler_Get(t *testing.T) {
 }
 
 func TestHandler_ShortenURL(t *testing.T) {
-	store := repository.NewStore()
+	store := repository.NewStore(&cfg)
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.ShortenURL))
 

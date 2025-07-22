@@ -30,7 +30,7 @@ type Service struct {
 }
 
 type Storer interface {
-	Add(url repository.URL)
+	Add(url repository.URL) error
 	Get(hash string) (string, error)
 }
 
@@ -44,14 +44,16 @@ func (s *Service) Add(link string) (string, error) {
 		Link: link,
 		Hash: hash,
 	}
-	s.store.Add(u)
-
-	link, err := s.makeURL(hash)
+	err := s.store.Add(u)
+	if err != nil {
+		return "", err
+	}
+	URL, err := s.makeURL(hash)
 	if err != nil {
 		return "", err
 	}
 
-	return link, nil
+	return URL, nil
 }
 
 func (s *Service) Get(hash string) (string, error) {
