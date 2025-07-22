@@ -100,7 +100,7 @@ func (s *Store) init() (*map[string]link, error) {
 	}
 	links := make(map[string]link, len(*store))
 	for _, l := range *store {
-		links[l.ShortURL] = link{l.OriginalUrl, l.UUID}
+		links[l.ShortURL] = link{l.OriginalURL, l.UUID}
 	}
 	return &links, nil
 }
@@ -111,7 +111,7 @@ func (s *Store) save() error {
 		ml := models.Link{
 			UUID:        l.UUID,
 			ShortURL:    hash,
-			OriginalUrl: l.URL,
+			OriginalURL: l.URL,
 		}
 		store = append(store, ml)
 	}

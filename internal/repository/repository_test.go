@@ -18,6 +18,29 @@ var cfg = config.Config{
 	},
 }
 
+func TestStore_Add(t *testing.T) {
+	fullPath := filepath.Join(cfg.FileStorage.FileStoragePath, cfg.FileStorage.FileStorageName)
+	f, _ := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
+	var store = &Store{
+		mux:  &sync.RWMutex{},
+		s:    make(map[string]link),
+		file: f,
+	}
+	tests := []struct {
+		name string
+		link URL
+		want link
+	}{
+		{"success", URL{"https://github.com/", "ASDQWE23"}, link{"https://github.com/", "1"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_ = store.Add(tt.link)
+			assert.Equal(t, tt.want, store.s[tt.link.Hash])
+		})
+	}
+}
+
 func TestNewStore(t *testing.T) {
 	fullPath := filepath.Join(cfg.FileStorage.FileStoragePath, cfg.FileStorage.FileStorageName)
 	f, _ := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
@@ -38,29 +61,6 @@ func TestNewStore(t *testing.T) {
 			if got := NewStore(&cfg); !reflect.DeepEqual(got.s, tt.want.s) {
 				t.Errorf("NewStore() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func TestStore_Add(t *testing.T) {
-	fullPath := filepath.Join(cfg.FileStorage.FileStoragePath, cfg.FileStorage.FileStorageName)
-	f, _ := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0666)
-	var store = &Store{
-		mux:  &sync.RWMutex{},
-		s:    make(map[string]link),
-		file: f,
-	}
-	tests := []struct {
-		name string
-		link URL
-		want link
-	}{
-		{"success", URL{"https://github.com/", "ASDQWE23"}, link{"https://github.com/", "1"}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_ = store.Add(tt.link)
-			assert.Equal(t, tt.want, store.s[tt.link.Hash])
 		})
 	}
 }
