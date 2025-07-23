@@ -4,6 +4,7 @@ import (
 	"github.com/spitfy/urlshortener/internal/config"
 	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"log"
 	"os"
 	"reflect"
@@ -61,7 +62,8 @@ func TestNewStore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewStore(&cfg); !reflect.DeepEqual(got.s, tt.want.s) {
+			if got, err := NewStore(&cfg); !reflect.DeepEqual(got.s, tt.want.s) {
+				require.NoError(t, err, "error creating store")
 				t.Errorf("NewStore() = %v, want %v", got, tt.want)
 			}
 		})

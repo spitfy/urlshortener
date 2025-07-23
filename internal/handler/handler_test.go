@@ -8,6 +8,7 @@ import (
 	models "github.com/spitfy/urlshortener/internal/model"
 	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
+	"github.com/stretchr/testify/require"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -43,7 +44,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_Post(t *testing.T) {
-	store := repository.NewStore(&cfg)
+	store, err := repository.NewStore(&cfg)
+	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
 
@@ -95,7 +97,8 @@ func TestHandler_Post(t *testing.T) {
 }
 
 func TestHandler_Get(t *testing.T) {
-	store := repository.NewStore(&cfg)
+	store, err := repository.NewStore(&cfg)
+	require.NoError(t, err, "error creating store")
 	_ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
 	l := logger.InitMock()
@@ -167,7 +170,8 @@ func TestHandler_Get(t *testing.T) {
 }
 
 func TestHandler_ShortenURL(t *testing.T) {
-	store := repository.NewStore(&cfg)
+	store, err := repository.NewStore(&cfg)
+	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.ShortenURL))
 

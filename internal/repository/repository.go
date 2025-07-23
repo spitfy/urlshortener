@@ -17,6 +17,8 @@ type Store struct {
 	file *os.File
 }
 
+type LinkList []models.Link
+
 type URL struct {
 	Link string
 	Hash string
@@ -35,14 +37,14 @@ func NewMockStore() *Store {
 	}
 }
 
-func NewStore(config *config.Config) *Store {
+func NewStore(config *config.Config) (*Store, error) {
 	dir := filepath.Dir(config.FileStorage.FileStoragePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		panic(fmt.Errorf("failed to create storage directory: %w", err))
+		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 	f, err := os.OpenFile(config.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to open file %s: %w", config.FileStorage.FileStoragePath, err)
 	}
 	store := Store{
 		mux:  &sync.RWMutex{},
@@ -51,11 +53,11 @@ func NewStore(config *config.Config) *Store {
 	}
 	links, err := store.init()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to init store: %w", err)
 	}
-	store.s = *links
+	store.s = links
 
-	return &store
+	return &store, nil
 }
 
 func (s *Store) Add(url URL) error {
@@ -78,38 +80,38 @@ func (s *Store) Get(hash string) (string, error) {
 	return res.URL, nil
 }
 
-func (s *Store) getStore() (*models.Store, error) {
+func (s *Store) getStore() (LinkList, error) {
 	_, err := s.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return nil, err
 	}
-	var store models.Store
+	var store LinkList
 	dec := json.NewDecoder(s.file)
 	err = dec.Decode(&store)
 	if err == io.EOF {
-		return &store, nil
+		return store, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &store, nil
+	return store, nil
 }
 
-func (s *Store) init() (*map[string]link, error) {
+func (s *Store) init() (map[string]link, error) {
 	store, err := s.getStore()
 	if err != nil {
 		return nil, err
 	}
-	links := make(map[string]link, len(*store))
-	for _, l := range *store {
+	links := make(map[string]link, len(store))
+	for _, l := range store {
 		links[l.ShortURL] = link{l.OriginalURL, l.UUID}
 	}
-	return &links, nil
+	return links, nil
 }
 
 func (s *Store) save() error {
-	var store models.Store
+	store := make(LinkList, 0, len(s.s))
 	for hash, l := range s.s {
 		ml := models.Link{
 			UUID:        l.UUID,
@@ -119,7 +121,10 @@ func (s *Store) save() error {
 		store = append(store, ml)
 	}
 
-	data, _ := json.Marshal(store)
+	data, err := json.Marshal(store)
+	if err != nil {
+		return err
+	}
 	tmpPath := s.file.Name() + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
 		return err

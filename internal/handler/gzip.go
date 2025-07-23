@@ -83,7 +83,7 @@ func gzipMiddleware(h http.Handler) http.HandlerFunc {
 			}
 			r.Body = cr
 			defer func() {
-				if err := r.Body; err != nil {
+				if err := r.Body.Close(); err != nil {
 					log.Println(err)
 				}
 			}()

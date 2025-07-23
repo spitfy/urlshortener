@@ -18,7 +18,10 @@ func main() {
 
 func run() error {
 	cfg := config.GetConfig()
-	store := repository.NewStore(cfg)
+	store, err := repository.NewStore(cfg)
+	if err != nil {
+		return err
+	}
 	s := service.NewService(*cfg, store)
 	l, err := logger.Initialize(cfg.Logger.LogLevel)
 	if err != nil {
