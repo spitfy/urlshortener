@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/spitfy/urlshortener/internal/logger"
+	"github.com/spitfy/urlshortener/internal/repository"
 	"log"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/handler"
-	"github.com/spitfy/urlshortener/internal/repository"
 	"github.com/spitfy/urlshortener/internal/service"
 )
 
@@ -16,9 +17,16 @@ func main() {
 }
 
 func run() error {
-	cfg := config.NewConfig().SetConfig().Parse()
-	store := repository.NewStore()
-	service := service.NewService(*cfg, store)
+	cfg := config.GetConfig()
+	store, err := repository.NewStore(cfg)
+	if err != nil {
+		return err
+	}
+	s := service.NewService(*cfg, store)
+	l, err := logger.Initialize(cfg.Logger.LogLevel)
+	if err != nil {
+		return err
+	}
 
-	return handler.Serve(*cfg, service)
+	return handler.Serve(*cfg, s, l)
 }

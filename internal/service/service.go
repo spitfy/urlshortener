@@ -30,33 +30,39 @@ type Service struct {
 }
 
 type Storer interface {
-	Add(url repository.URL)
+	Add(url repository.URL) error
 	Get(hash string) (string, error)
 }
 
 func (s *Service) Add(link string) (string, error) {
+	if !isURL(link) {
+		return "", errors.New("invalid url")
+	}
+
 	hash := RandString(CharCnt)
-	url := repository.URL{
+	u := repository.URL{
 		Link: link,
 		Hash: hash,
 	}
-	s.store.Add(url)
-
-	link, err := s.makeURL(hash)
+	err := s.store.Add(u)
+	if err != nil {
+		return "", err
+	}
+	URL, err := s.makeURL(hash)
 	if err != nil {
 		return "", err
 	}
 
-	return link, nil
+	return URL, nil
 }
 
 func (s *Service) Get(hash string) (string, error) {
-	url, err := s.store.Get(hash)
+	get, err := s.store.Get(hash)
 	if err != nil {
 		return "", err
 	}
 
-	return url, nil
+	return get, nil
 }
 
 func NewService(cfg config.Config, store Storer) *Service {
@@ -74,4 +80,9 @@ func (s *Service) makeURL(hash string) (string, error) {
 	}
 
 	return addr, nil
+}
+
+func isURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
