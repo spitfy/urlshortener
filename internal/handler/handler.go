@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/repository"
 	"io"
 	"log"
 	"mime"
@@ -127,6 +128,20 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := repository.Ping(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func newHandler(s ServiceShortener) *Handler {
 	return &Handler{
 		service: s,
@@ -147,6 +162,7 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 
 func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
+	r.Get("/ping", gzipMiddleware(l.LogInfo(h.Ping)))
 	r.Get("/{hash}", gzipMiddleware(l.LogInfo(h.Get)))
 	r.Post("/api/shorten", gzipMiddleware(l.LogInfo(h.ShortenURL)))
 	r.Post("/", gzipMiddleware(l.LogInfo(h.Post)))
