@@ -26,7 +26,7 @@ const (
 	DefaultLogLevel        string = "info"
 	DefaultFileStorage     string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
-	DefaultDbDSN           string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
+	DefaultDatabaseDsn     string = "host=localhost user=postgres password=postgres dbname=urls sslmode=disable"
 )
 
 func GetConfig() *Config {
@@ -35,7 +35,7 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
 	flag.StringVar(&conf.FileStorage.FileStoragePath, "f", DefaultFileStorage, "file storage path")
-	flag.StringVar(&conf.DB.DatabaseDSN, "d", DefaultDbDSN, "database DSN address")
+	flag.StringVar(&conf.DB.DatabaseDsn, "d", DefaultDatabaseDsn, "database DSN address")
 
 	flag.Parse()
 

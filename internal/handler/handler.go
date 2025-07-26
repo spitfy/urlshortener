@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	models "github.com/spitfy/urlshortener/internal/model"
-	"github.com/spitfy/urlshortener/internal/repository"
 	"io"
 	"log"
 	"mime"
@@ -21,6 +20,7 @@ type Handler struct {
 type ServiceShortener interface {
 	Add(link string) (string, error)
 	Get(hash string) (string, error)
+	Ping() error
 }
 
 type RequestLogger interface {
@@ -129,16 +129,10 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if err := repository.Ping(); err != nil {
+	if err := h.service.Ping(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 

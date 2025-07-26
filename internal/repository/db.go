@@ -2,22 +2,32 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/spitfy/urlshortener/internal/config"
 )
 
-func Ping() error {
-	ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-		`localhost`, `postgres`, `postgres`, `urls`)
+type DB struct {
+	conf *config.Config
+	db   *sql.DB
+}
 
-	db, err := sql.Open("pgx", ps)
+func NewDB(conf *config.Config) (*DB, error) {
+	db, err := sql.Open("pgx", conf.DB.DatabaseDsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
 
-	err = db.Ping()
-	if err != nil {
+	return &DB{
+		conf,
+		db,
+	}, nil
+}
+
+func (r DB) Ping() error {
+	if err := r.db.Ping(); err != nil {
 		return err
 	}
 	return nil

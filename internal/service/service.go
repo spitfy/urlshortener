@@ -32,6 +32,7 @@ type Service struct {
 type Storer interface {
 	Add(url repository.URL) error
 	Get(hash string) (string, error)
+	Ping() error
 }
 
 func (s *Service) Add(link string) (string, error) {
@@ -63,6 +64,10 @@ func (s *Service) Get(hash string) (string, error) {
 	}
 
 	return get, nil
+}
+
+func (s *Service) Ping() error {
+	return s.store.Ping()
 }
 
 func NewService(cfg config.Config, store Storer) *Service {

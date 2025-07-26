@@ -15,6 +15,7 @@ type Store struct {
 	mux  *sync.RWMutex
 	s    map[string]link
 	file *os.File
+	*DB
 }
 
 type LinkList []models.Link
@@ -46,10 +47,15 @@ func NewStore(config *config.Config) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", config.FileStorage.FileStoragePath, err)
 	}
+	db, err := NewDB(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init database: %w", err)
+	}
 	store := Store{
 		mux:  &sync.RWMutex{},
 		s:    nil,
 		file: f,
+		DB:   db,
 	}
 	links, err := store.init()
 	if err != nil {
@@ -67,6 +73,10 @@ func (s *Store) Add(url URL) error {
 	s.s[url.Hash] = link{url.Link, fmt.Sprintf("%d", uuid)}
 
 	return s.save()
+}
+
+func (s *Store) Ping() error {
+	return nil
 }
 
 func (s *Store) Get(hash string) (string, error) {
