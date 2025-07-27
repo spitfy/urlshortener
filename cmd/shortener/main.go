@@ -18,7 +18,7 @@ func main() {
 
 func run() error {
 	cfg := config.GetConfig()
-	store, err := repository.NewStore(cfg)
+	store, err := repository.CreateStore(cfg)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 
 func TestStore_Add(t *testing.T) {
 	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
-	var store = &Store{
+	var store = &FileStore{
 		mux:  &sync.RWMutex{},
 		s:    make(map[string]link),
 		file: f,
@@ -48,7 +48,7 @@ func TestStore_Add(t *testing.T) {
 
 func TestNewStore(t *testing.T) {
 	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
-	var store = &Store{
+	var store = &FileStore{
 		mux:  &sync.RWMutex{},
 		s:    map[string]link{"ASDQWE23": {"https://github.com/", "1"}},
 		file: f,
@@ -56,15 +56,15 @@ func TestNewStore(t *testing.T) {
 
 	tests := []struct {
 		name string
-		want *Store
+		want *FileStore
 	}{
 		{"success", store},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, err := NewStore(&cfg); !reflect.DeepEqual(got.s, tt.want.s) {
+			if got, err := NewFileStore(&cfg); !reflect.DeepEqual(got.s, tt.want.s) {
 				require.NoError(t, err, "error creating store")
-				t.Errorf("NewStore() = %v, want %v", got, tt.want)
+				t.Errorf("NewFileStore() = %v, want %v", got, tt.want)
 			}
 		})
 	}

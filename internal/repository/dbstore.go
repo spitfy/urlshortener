@@ -26,9 +26,17 @@ func NewDB(conf *config.Config) (*DB, error) {
 	}, nil
 }
 
-func (r DB) Ping() error {
+func (r *DB) Ping() error {
 	if err := r.db.Ping(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *DB) Add(url URL) error {
+	return nil
+}
+
+func (s *DB) Get(hash string) (string, error) {
+	return "", nil
 }
