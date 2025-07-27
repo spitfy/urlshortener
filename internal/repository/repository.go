@@ -22,7 +22,7 @@ type Storer interface {
 
 func CreateStore(conf *config.Config) (Storer, error) {
 	if conf.DB.DatabaseDsn != "" && conf.DB.DatabaseDsn != config.DefaultDatabaseDsn {
-		return NewDB(conf)
+		return NewDBStore(conf)
 	}
 	if conf.FileStorage.FileStoragePath != "" && conf.FileStorage.FileStoragePath != config.DefaultFileStorage {
 		return NewFileStore(conf)

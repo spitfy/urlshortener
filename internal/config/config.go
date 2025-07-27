@@ -26,7 +26,7 @@ const (
 	DefaultLogLevel        string = "info"
 	DefaultFileStorage     string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
-	DefaultDatabaseDsn     string = "host=localhost user=postgres password=postgres dbname=urls sslmode=disable"
+	DefaultDatabaseDsn     string = "host=localhost user=postgres password=postgres dbname=urls sslmode=disable "
 )
 
 func GetConfig() *Config {

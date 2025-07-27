@@ -15,7 +15,7 @@ type FileStore struct {
 	mux  *sync.RWMutex
 	s    map[string]link
 	file *os.File
-	*DB
+	*DBStore
 }
 
 type LinkList []models.Link
@@ -37,15 +37,15 @@ func NewFileStore(config *config.Config) (*FileStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", config.FileStorage.FileStoragePath, err)
 	}
-	db, err := NewDB(config)
+	db, err := NewDBStore(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init database: %w", err)
 	}
 	store := FileStore{
-		mux:  &sync.RWMutex{},
-		s:    nil,
-		file: f,
-		DB:   db,
+		mux:     &sync.RWMutex{},
+		s:       nil,
+		file:    f,
+		DBStore: db,
 	}
 	links, err := store.init()
 	if err != nil {
