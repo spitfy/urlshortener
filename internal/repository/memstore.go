@@ -21,7 +21,7 @@ func (s *MemStore) Add(url URL) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, ok := s.s[url.Hash]; ok {
-		return fmt.Errorf("Wrong hash: '%s', already exists", url.Hash)
+		return fmt.Errorf("wrong hash: '%s', already exists", url.Hash)
 	}
 	s.s[url.Hash] = url.Link
 	return nil

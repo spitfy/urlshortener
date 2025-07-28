@@ -11,3 +11,6 @@
 - инициализацию зависимостей (можно вынести в отдельный пакет `internal/app`)
 - настройку и запуск HTTP-сервера (можно вынести в отдельный пакет `internal/router`)
 - обработку сигналов завершения работы приложения
+
+Запуск сервера с БД
+`go run . -d "postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable"`
