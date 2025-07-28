@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -23,21 +22,20 @@ func TestMain(m *testing.M) {
 func TestStore_Add(t *testing.T) {
 	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	var store = &FileStore{
-		mux:  &sync.RWMutex{},
-		s:    make(map[string]link),
-		file: f,
+		file:     f,
+		MemStore: newMemStore(),
 	}
 	tests := []struct {
 		name string
 		link URL
-		want link
+		want map[string]string
 	}{
-		{"success", URL{"https://github.com/", "ASDQWE23"}, link{"https://github.com/", "1"}},
+		{"success", URL{"https://github.com/", "ASDQWE23"}, map[string]string{"ASDQWE23": "https://github.com/"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_ = store.Add(tt.link)
-			assert.Equal(t, tt.want, store.s[tt.link.Hash])
+			assert.Equal(t, tt.want[tt.link.Hash], store.s[tt.link.Hash])
 		})
 	}
 	if err := os.Remove(cfg.FileStorage.FileStoragePath); err != nil {
@@ -48,9 +46,8 @@ func TestStore_Add(t *testing.T) {
 func TestNewStore(t *testing.T) {
 	f, _ := os.OpenFile(cfg.FileStorage.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 	var store = &FileStore{
-		mux:  &sync.RWMutex{},
-		s:    make(map[string]link, 0),
-		file: f,
+		file:     f,
+		MemStore: newMemStore(),
 	}
 
 	tests := []struct {

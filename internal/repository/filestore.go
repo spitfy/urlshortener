@@ -8,23 +8,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 type FileStore struct {
-	mux  *sync.RWMutex
-	s    map[string]link
 	file *os.File
-	*DBStore
+	*MemStore
 }
 
 type LinkList []models.Link
 
 func NewMockStore() *FileStore {
 	return &FileStore{
-		mux:  &sync.RWMutex{},
-		s:    nil,
-		file: nil,
+		file:     nil,
+		MemStore: newMemStore(),
 	}
 }
 
@@ -37,15 +33,9 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", config.FileStorage.FileStoragePath, err)
 	}
-	db, err := newDBStore(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init database: %w", err)
-	}
 	store := FileStore{
-		mux:     &sync.RWMutex{},
-		s:       nil,
-		file:    f,
-		DBStore: db,
+		file:     f,
+		MemStore: newMemStore(),
 	}
 	links, err := store.init()
 	if err != nil {
@@ -56,32 +46,12 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	return &store, nil
 }
 
-func (s *FileStore) Add(url URL) error {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	uuid := len(s.s) + 1
-	s.s[url.Hash] = link{url.Link, fmt.Sprintf("%d", uuid)}
-
-	return s.save()
-}
-
-func (s *FileStore) Ping() error {
-	return nil
-}
-
-func (s *FileStore) Close() error {
-	return nil
-}
-
 func (s *FileStore) Get(hash string) (string, error) {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
-	res, ok := s.s[hash]
-	if !ok {
-		return "", fmt.Errorf("data not found for n = %s", hash)
+	link, err := s.MemStore.Get(hash)
+	if err != nil {
+		return "", err
 	}
-
-	return res.URL, nil
+	return link, nil
 }
 
 func (s *FileStore) getStore() (LinkList, error) {
@@ -102,27 +72,38 @@ func (s *FileStore) getStore() (LinkList, error) {
 	return store, nil
 }
 
-func (s *FileStore) init() (map[string]link, error) {
-	store, err := s.getStore()
+func (s *FileStore) init() (map[string]string, error) {
+	_, err := s.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return nil, err
 	}
-	links := make(map[string]link, len(store))
+	var store LinkList
+	dec := json.NewDecoder(s.file)
+	err = dec.Decode(&store)
+	if err == io.EOF {
+		store = nil
+	} else if err != nil {
+		return nil, err
+	}
+	links := make(map[string]string, len(store))
 	for _, l := range store {
-		links[l.ShortURL] = link{l.OriginalURL, l.UUID}
+		links[l.ShortURL] = l.OriginalURL
 	}
 	return links, nil
 }
 
-func (s *FileStore) save() error {
+func (s *FileStore) Add(url URL) error {
+	_ = s.MemStore.Add(url)
 	store := make(LinkList, 0, len(s.s))
+	uuid := 1
 	for hash, l := range s.s {
 		ml := models.Link{
-			UUID:        l.UUID,
+			UUID:        string(rune(uuid)),
 			ShortURL:    hash,
-			OriginalURL: l.URL,
+			OriginalURL: l,
 		}
 		store = append(store, ml)
+		uuid++
 	}
 
 	data, err := json.Marshal(store)
@@ -135,4 +116,12 @@ func (s *FileStore) save() error {
 	}
 
 	return os.Rename(tmpPath, s.file.Name())
+}
+
+func (s *FileStore) Ping() error {
+	return nil
+}
+
+func (s *FileStore) Close() error {
+	return nil
 }
