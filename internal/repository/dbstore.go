@@ -12,7 +12,7 @@ type DBStore struct {
 	db   *sql.DB
 }
 
-func NewDBStore(conf *config.Config) (*DBStore, error) {
+func newDBStore(conf *config.Config) (*DBStore, error) {
 	db, err := sql.Open("pgx", conf.DB.DatabaseDsn)
 	if err != nil {
 		return nil, err
@@ -22,6 +22,10 @@ func NewDBStore(conf *config.Config) (*DBStore, error) {
 		conf,
 		db,
 	}, nil
+}
+
+func (s *DBStore) Close() error {
+	return s.db.Close()
 }
 
 func (s *DBStore) Ping() error {

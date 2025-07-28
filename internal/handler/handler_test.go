@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_Post(t *testing.T) {
-	store, err := repository.NewFileStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
@@ -97,7 +97,7 @@ func TestHandler_Post(t *testing.T) {
 }
 
 func TestHandler_Get(t *testing.T) {
-	store, err := repository.NewFileStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	_ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
@@ -170,7 +170,7 @@ func TestHandler_Get(t *testing.T) {
 }
 
 func TestHandler_ShortenURL(t *testing.T) {
-	store, err := repository.NewFileStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.ShortenURL))

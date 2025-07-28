@@ -17,15 +17,16 @@ type link struct {
 type Storer interface {
 	Add(url URL) error
 	Get(hash string) (string, error)
+	Close() error
 	Ping() error
 }
 
 func CreateStore(conf *config.Config) (Storer, error) {
 	if conf.DB.DatabaseDsn != "" && conf.DB.DatabaseDsn != config.DefaultDatabaseDsn {
-		return NewDBStore(conf)
+		return newDBStore(conf)
 	}
 	if conf.FileStorage.FileStoragePath != "" && conf.FileStorage.FileStoragePath != config.DefaultFileStorage {
-		return NewFileStore(conf)
+		return newFileStore(conf)
 	}
-	return NewMemStore(), nil
+	return newMemStore(), nil
 }

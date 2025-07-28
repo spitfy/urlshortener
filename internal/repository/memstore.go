@@ -10,7 +10,7 @@ type MemStore struct {
 	s   map[string]string
 }
 
-func NewMemStore() *MemStore {
+func newMemStore() *MemStore {
 	return &MemStore{
 		mux: &sync.Mutex{},
 		s:   make(map[string]string),
@@ -38,5 +38,9 @@ func (s *MemStore) Get(hash string) (string, error) {
 }
 
 func (s *MemStore) Ping() error {
+	return nil
+}
+
+func (s *MemStore) Close() error {
 	return nil
 }

@@ -28,7 +28,7 @@ func NewMockStore() *FileStore {
 	}
 }
 
-func NewFileStore(config *config.Config) (*FileStore, error) {
+func newFileStore(config *config.Config) (*FileStore, error) {
 	dir := filepath.Dir(config.FileStorage.FileStoragePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
@@ -37,7 +37,7 @@ func NewFileStore(config *config.Config) (*FileStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", config.FileStorage.FileStoragePath, err)
 	}
-	db, err := NewDBStore(config)
+	db, err := newDBStore(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init database: %w", err)
 	}
@@ -66,6 +66,10 @@ func (s *FileStore) Add(url URL) error {
 }
 
 func (s *FileStore) Ping() error {
+	return nil
+}
+
+func (s *FileStore) Close() error {
 	return nil
 }
 
