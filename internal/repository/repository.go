@@ -9,11 +9,6 @@ type URL struct {
 	Hash string
 }
 
-type link struct {
-	URL  string
-	UUID string
-}
-
 type Storer interface {
 	Add(url URL) error
 	Get(hash string) (string, error)
