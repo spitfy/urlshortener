@@ -16,3 +16,5 @@
 `go run . -d "postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable"`
 Запуск с файловым хранилищем
 `go run . -f "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"`
+
+Для дебага `DATABASE_DSN="postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable"`

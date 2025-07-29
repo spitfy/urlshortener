@@ -7,9 +7,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/spitfy/urlshortener/internal/config"
+	"path/filepath"
 )
-
-const migrationPath = "file://../../migrations"
 
 type Migration struct {
 	conf *config.Config
@@ -20,8 +19,13 @@ func NewMigration(conf *config.Config) *Migration {
 }
 
 func (mg *Migration) Up() error {
+	migrationsPath, err := getMigrationsDir()
+	if err != nil {
+		return fmt.Errorf("%w; migrations path source error", err)
+	}
+	migrationSource := "file://" + filepath.ToSlash(migrationsPath)
 	m, err := migrate.New(
-		migrationPath,
+		migrationSource,
 		mg.conf.DB.DatabaseDsn)
 	if err != nil {
 		return err
