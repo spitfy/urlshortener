@@ -29,9 +29,6 @@ func (mg *Migration) Up() error {
 	defer func() {
 		serr, dberr := m.Close()
 		if serr != nil {
-			err = fmt.Errorf("Error migration source %w: %v", serr)
-		}
-		if serr != nil {
 			if err != nil {
 				err = fmt.Errorf("%w; migration source error: %v", err, serr)
 			} else {
