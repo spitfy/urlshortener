@@ -17,10 +17,10 @@ type Storer interface {
 }
 
 func CreateStore(conf *config.Config) (Storer, error) {
-	if conf.DB.DatabaseDsn != "" && conf.DB.DatabaseDsn != config.DefaultDatabaseDsn {
+	if conf.DB.DatabaseDsn != "" {
 		return newDBStore(conf)
 	}
-	if conf.FileStorage.FileStoragePath != "" && conf.FileStorage.FileStoragePath != config.DefaultFileStorage {
+	if conf.FileStorage.FileStoragePath != "" {
 		return newFileStore(conf)
 	}
 	return newMemStore(), nil

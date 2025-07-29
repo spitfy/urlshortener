@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/spitfy/urlshortener/internal/config"
+	"github.com/spitfy/urlshortener/internal/migration"
 )
 
 type DBStore struct {
@@ -12,15 +13,26 @@ type DBStore struct {
 }
 
 func newDBStore(conf *config.Config) (*DBStore, error) {
+	if err := migrate(conf); err != nil {
+		return nil, err
+	}
+
 	conn, err := pgx.Connect(context.Background(), conf.DB.DatabaseDsn)
 	if err != nil {
 		return nil, err
 	}
-
 	return &DBStore{
 		conf,
 		conn,
 	}, nil
+}
+
+func migrate(conf *config.Config) error {
+	m := migration.NewMigration(conf)
+	if err := m.Up(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *DBStore) Close() error {

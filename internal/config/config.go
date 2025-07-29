@@ -24,9 +24,9 @@ const (
 	DefaultServerAddr      string = ":8080"
 	DefaultServerURL       string = "http://localhost:8080"
 	DefaultLogLevel        string = "info"
-	DefaultFileStorage     string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"
+	DefaultFileStorage     string = ""
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
-	DefaultDatabaseDsn     string = "host=localhost user=postgres password=postgres dbname=urls sslmode=disable "
+	DefaultDatabaseDsn     string = ""
 )
 
 func GetConfig() *Config {
