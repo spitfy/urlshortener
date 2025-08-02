@@ -60,7 +60,7 @@ func (s *Service) BatchAdd(req []models.BatchCreateRequest) ([]models.BatchCreat
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, models.BatchCreateResponse{r.CorrelationId, shortURL})
+		res = append(res, models.BatchCreateResponse{CorrelationId: r.CorrelationId, ShortURL: shortURL})
 	}
 
 	return res, nil
@@ -83,7 +83,7 @@ func (s *Service) BatchAdd1(
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, models.BatchCreateResponse{r.CorrelationId, shortURL})
+		res = append(res, models.BatchCreateResponse{CorrelationId: r.CorrelationId, ShortURL: shortURL})
 	}
 	if err := s.store.BatchAdd(ctx, urls); err != nil {
 		return nil, err
