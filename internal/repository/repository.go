@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/spitfy/urlshortener/internal/config"
 )
 
@@ -14,6 +15,7 @@ type Storer interface {
 	Get(hash string) (string, error)
 	Close() error
 	Ping() error
+	BatchAdd(ctx context.Context, urls []URL) error
 }
 
 func CreateStore(conf *config.Config) (Storer, error) {

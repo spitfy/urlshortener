@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/spitfy/urlshortener/internal/config"
@@ -93,7 +94,34 @@ func (s *FileStore) init() (map[string]string, error) {
 }
 
 func (s *FileStore) Add(url URL) error {
-	_ = s.MemStore.Add(url)
+	if err := s.MemStore.Add(url); err != nil {
+		return err
+	}
+	if err := s.save(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *FileStore) Ping() error {
+	return nil
+}
+
+func (s *FileStore) Close() error {
+	return nil
+}
+
+func (s *FileStore) BatchAdd(ctx context.Context, urls []URL) error {
+	if err := s.MemStore.BatchAdd(ctx, urls); err != nil {
+		return err
+	}
+	if err := s.save(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *FileStore) save() error {
 	store := make(LinkList, 0, len(s.s))
 	uuid := 1
 	for hash, l := range s.s {
@@ -105,7 +133,6 @@ func (s *FileStore) Add(url URL) error {
 		store = append(store, ml)
 		uuid++
 	}
-
 	data, err := json.Marshal(store)
 	if err != nil {
 		return err
@@ -116,12 +143,4 @@ func (s *FileStore) Add(url URL) error {
 	}
 
 	return os.Rename(tmpPath, s.file.Name())
-}
-
-func (s *FileStore) Ping() error {
-	return nil
-}
-
-func (s *FileStore) Close() error {
-	return nil
 }

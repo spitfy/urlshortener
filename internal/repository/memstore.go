@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
@@ -42,5 +43,14 @@ func (s *MemStore) Ping() error {
 }
 
 func (s *MemStore) Close() error {
+	return nil
+}
+
+func (s *MemStore) BatchAdd(_ context.Context, urls []URL) error {
+	for _, u := range urls {
+		if err := s.Add(u); err != nil {
+			return err
+		}
+	}
 	return nil
 }

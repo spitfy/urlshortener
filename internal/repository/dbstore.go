@@ -48,7 +48,7 @@ func (s *DBStore) Ping() error {
 
 func (s *DBStore) Add(url URL) error {
 	_, err := s.conn.Exec(context.Background(),
-		`INSERT INTO urls (hash, original_url) VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, url.Hash, url.Link)
+		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
 	if err != nil {
 		return err
 	}
@@ -63,4 +63,34 @@ func (s *DBStore) Get(hash string) (string, error) {
 		return "", err
 	}
 	return link, nil
+}
+
+func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
+	tx, err := s.conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+	batch := &pgx.Batch{}
+	for _, url := range urls {
+		batch.Queue("INSERT INTO urls (hash, original_url) VALUES ($1, $2)", url.Hash, url.Link)
+	}
+
+	br := tx.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for range urls {
+		_, err := br.Exec()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
