@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"crypto/rand"
 	"errors"
 	models "github.com/spitfy/urlshortener/internal/model"
@@ -60,33 +59,7 @@ func (s *Service) BatchAdd(req []models.BatchCreateRequest) ([]models.BatchCreat
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, models.BatchCreateResponse{CorrelationId: r.CorrelationId, ShortURL: shortURL})
-	}
-
-	return res, nil
-}
-
-func (s *Service) BatchAdd1(
-	ctx context.Context,
-	req []models.BatchCreateRequest,
-) ([]models.BatchCreateResponse, error) {
-	res := make([]models.BatchCreateResponse, 0, len(req))
-
-	urls := make([]repository.URL, 0, len(req))
-	for _, r := range req {
-		hash := RandString(CharCnt)
-		urls = append(urls, repository.URL{
-			Link: r.OriginalURL,
-			Hash: hash,
-		})
-		shortURL, err := s.makeURL(hash)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, models.BatchCreateResponse{CorrelationId: r.CorrelationId, ShortURL: shortURL})
-	}
-	if err := s.store.BatchAdd(ctx, urls); err != nil {
-		return nil, err
+		res = append(res, models.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
 	}
 
 	return res, nil
