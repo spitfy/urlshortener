@@ -107,10 +107,7 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 
 	br := tx.SendBatch(ctx, batch)
 	defer func(br pgx.BatchResults) {
-		err := br.Close()
-		if err != nil {
-
-		}
+		_ = br.Close()
 	}(br)
 
 	for range urls {
