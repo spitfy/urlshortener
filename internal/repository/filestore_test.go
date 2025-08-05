@@ -34,7 +34,7 @@ func TestStore_Add(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = store.Add(tt.link)
+			_, _ = store.Add(tt.link)
 			assert.Equal(t, tt.want[tt.link.Hash], store.s[tt.link.Hash])
 		})
 	}

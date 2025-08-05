@@ -93,14 +93,14 @@ func (s *FileStore) init() (map[string]string, error) {
 	return links, nil
 }
 
-func (s *FileStore) Add(url URL) error {
-	if err := s.MemStore.Add(url); err != nil {
-		return err
+func (s *FileStore) Add(url URL) (string, error) {
+	if hash, err := s.MemStore.Add(url); err != nil {
+		return hash, err
 	}
 	if err := s.save(); err != nil {
-		return err
+		return url.Hash, err
 	}
-	return nil
+	return url.Hash, nil
 }
 
 func (s *FileStore) Ping() error {

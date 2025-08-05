@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"github.com/spitfy/urlshortener/internal/config"
 )
 
@@ -10,8 +11,12 @@ type URL struct {
 	Hash string
 }
 
+var (
+	ErrExistsURL = errors.New("URL already exists")
+)
+
 type Storer interface {
-	Add(url URL) error
+	Add(url URL) (hash string, err error)
 	Get(hash string) (string, error)
 	Close() error
 	Ping() error

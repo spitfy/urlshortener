@@ -2,7 +2,9 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/repository"
 	"io"
 	"log"
 	"mime"
@@ -62,6 +64,11 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	shortURL, err := h.service.Add(string(body))
 
 	if err != nil {
+		if errors.Is(err, repository.ErrExistsURL) {
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(shortURL))
+			return
+		}
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Error saving url: %v", err)
 		return
@@ -74,35 +81,39 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "application/json" {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "invalid content-type", http.StatusBadRequest)
 		return
 	}
 
 	var req models.Request
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "invalid json body", http.StatusBadRequest)
 		return
 	}
 
-	link, err := h.service.Add(req.URL)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
+	shortURL, err := h.service.Add(req.URL)
+	res := models.Response{Result: shortURL}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 
-	res := models.Response{Result: link}
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusCreated)
+	case errors.Is(err, repository.ErrExistsURL):
+		w.WriteHeader(http.StatusConflict)
+	default:
+		http.Error(w, "could not shorten URL", http.StatusInternalServerError)
+		return
+	}
+
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "encoding error", http.StatusInternalServerError)
 		return
 	}
 }

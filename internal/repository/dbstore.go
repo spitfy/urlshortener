@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/migration"
 )
@@ -46,13 +49,27 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
-func (s *DBStore) Add(url URL) error {
-	_, err := s.conn.Exec(context.Background(),
+func (s *DBStore) Add(url URL) (string, error) {
+	ctx := context.Background()
+	_, err := s.conn.Exec(ctx,
 		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
 	if err != nil {
-		return err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			var hash string
+			err = s.conn.QueryRow(
+				ctx,
+				"SELECT hash FROM urls WHERE original_url=$1",
+				url.Link,
+			).Scan(&hash)
+			if err != nil {
+				return url.Hash, err
+			}
+			return hash, ErrExistsURL
+		}
+		return url.Hash, err
 	}
-	return nil
+	return url.Hash, nil
 }
 
 func (s *DBStore) Get(hash string) (string, error) {
@@ -72,9 +89,15 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			err := tx.Rollback(ctx)
+			if err != nil {
+				return
+			}
 		} else {
-			tx.Commit(ctx)
+			err := tx.Commit(ctx)
+			if err != nil {
+				return
+			}
 		}
 	}()
 	batch := &pgx.Batch{}
@@ -83,7 +106,12 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}
 
 	br := tx.SendBatch(ctx, batch)
-	defer br.Close()
+	defer func(br pgx.BatchResults) {
+		err := br.Close()
+		if err != nil {
+
+		}
+	}(br)
 
 	for range urls {
 		_, err := br.Exec()

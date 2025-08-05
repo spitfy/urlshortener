@@ -36,20 +36,20 @@ func (s *Service) Add(link string) (string, error) {
 	}
 
 	hash := RandString(CharCnt)
-	u := repository.URL{
-		Link: link,
-		Hash: hash,
-	}
-	err := s.store.Add(u)
-	if err != nil {
-		return "", err
-	}
-	URL, err := s.makeURL(hash)
-	if err != nil {
-		return "", err
-	}
+	u := repository.URL{Link: link, Hash: hash}
+	hash, err := s.store.Add(u)
 
-	return URL, nil
+	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
+		return "", err
+	}
+	shortURL, errMakeURL := s.makeURL(hash)
+	if errMakeURL != nil {
+		return "", errMakeURL
+	}
+	if errors.Is(err, repository.ErrExistsURL) {
+		return shortURL, repository.ErrExistsURL
+	}
+	return shortURL, nil
 }
 
 func (s *Service) BatchAdd(req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {

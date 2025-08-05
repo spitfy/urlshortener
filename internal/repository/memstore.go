@@ -18,14 +18,14 @@ func newMemStore() *MemStore {
 	}
 }
 
-func (s *MemStore) Add(url URL) error {
+func (s *MemStore) Add(url URL) (hash string, err error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, ok := s.s[url.Hash]; ok {
-		return fmt.Errorf("wrong hash: '%s', already exists", url.Hash)
+		return url.Hash, fmt.Errorf("wrong hash: '%s', already exists", url.Hash)
 	}
 	s.s[url.Hash] = url.Link
-	return nil
+	return url.Hash, nil
 }
 
 func (s *MemStore) Get(hash string) (string, error) {
@@ -48,7 +48,7 @@ func (s *MemStore) Close() error {
 
 func (s *MemStore) BatchAdd(_ context.Context, urls []URL) error {
 	for _, u := range urls {
-		if err := s.Add(u); err != nil {
+		if _, err := s.Add(u); err != nil {
 			return err
 		}
 	}

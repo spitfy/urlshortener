@@ -99,7 +99,7 @@ func TestHandler_Post(t *testing.T) {
 func TestHandler_Get(t *testing.T) {
 	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
-	_ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
+	_, _ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
 	l := logger.InitMock()
 	srv = httptest.NewServer(newRouter(handler, l))
@@ -188,7 +188,7 @@ func TestHandler_ShortenURL(t *testing.T) {
 			method:       http.MethodGet,
 			body:         "",
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{
@@ -196,7 +196,7 @@ func TestHandler_ShortenURL(t *testing.T) {
 			method:       http.MethodGet,
 			body:         "",
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{
@@ -208,11 +208,11 @@ func TestHandler_ShortenURL(t *testing.T) {
 			expectedBody: false,
 		},
 		{
-			name:         "method_post_unsupported_type",
+			name:         "method_get_unsupported_type",
 			method:       http.MethodGet,
 			body:         `{"res": "https://www.perplexity.ai"}`,
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{
