@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	models "github.com/spitfy/urlshortener/internal/model"
@@ -30,14 +31,14 @@ type Service struct {
 	config config.Config
 }
 
-func (s *Service) Add(link string) (string, error) {
+func (s *Service) Add(ctx context.Context, link string) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
 	}
 
 	hash := RandString(CharCnt)
 	u := repository.URL{Link: link, Hash: hash}
-	hash, err := s.store.Add(u)
+	hash, err := s.store.Add(ctx, u)
 
 	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
 		return "", err
@@ -52,10 +53,10 @@ func (s *Service) Add(link string) (string, error) {
 	return shortURL, nil
 }
 
-func (s *Service) BatchAdd(req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (s *Service) BatchAdd(ctx context.Context, req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	res := make([]models.BatchCreateResponse, 0, len(req))
 	for _, r := range req {
-		shortURL, err := s.Add(r.OriginalURL)
+		shortURL, err := s.Add(ctx, r.OriginalURL)
 		if err != nil {
 			return nil, err
 		}
@@ -65,8 +66,8 @@ func (s *Service) BatchAdd(req []models.BatchCreateRequest) ([]models.BatchCreat
 	return res, nil
 }
 
-func (s *Service) Get(hash string) (string, error) {
-	get, err := s.store.Get(hash)
+func (s *Service) Get(ctx context.Context, hash string) (string, error) {
+	get, err := s.store.Get(ctx, hash)
 	if err != nil {
 		return "", err
 	}

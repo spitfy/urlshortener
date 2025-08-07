@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
@@ -99,7 +100,8 @@ func TestHandler_Post(t *testing.T) {
 func TestHandler_Get(t *testing.T) {
 	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
-	_, _ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
+	ctx := context.Background()
+	_, _ = store.Add(ctx, repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
 	l := logger.InitMock()
 	srv = httptest.NewServer(newRouter(handler, l))

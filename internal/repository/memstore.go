@@ -18,7 +18,7 @@ func newMemStore() *MemStore {
 	}
 }
 
-func (s *MemStore) Add(url URL) (hash string, err error) {
+func (s *MemStore) Add(_ context.Context, url URL) (hash string, err error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, ok := s.s[url.Hash]; ok {
@@ -28,7 +28,7 @@ func (s *MemStore) Add(url URL) (hash string, err error) {
 	return url.Hash, nil
 }
 
-func (s *MemStore) Get(hash string) (string, error) {
+func (s *MemStore) Get(_ context.Context, hash string) (string, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	res, ok := s.s[hash]
@@ -46,9 +46,9 @@ func (s *MemStore) Close() error {
 	return nil
 }
 
-func (s *MemStore) BatchAdd(_ context.Context, urls []URL) error {
+func (s *MemStore) BatchAdd(ctx context.Context, urls []URL) error {
 	for _, u := range urls {
-		if _, err := s.Add(u); err != nil {
+		if _, err := s.Add(ctx, u); err != nil {
 			return err
 		}
 	}

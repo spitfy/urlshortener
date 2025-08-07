@@ -47,8 +47,8 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	return &store, nil
 }
 
-func (s *FileStore) Get(hash string) (string, error) {
-	link, err := s.MemStore.Get(hash)
+func (s *FileStore) Get(ctx context.Context, hash string) (string, error) {
+	link, err := s.MemStore.Get(ctx, hash)
 	if err != nil {
 		return "", err
 	}
@@ -93,8 +93,8 @@ func (s *FileStore) init() (map[string]string, error) {
 	return links, nil
 }
 
-func (s *FileStore) Add(url URL) (string, error) {
-	if hash, err := s.MemStore.Add(url); err != nil {
+func (s *FileStore) Add(ctx context.Context, url URL) (string, error) {
+	if hash, err := s.MemStore.Add(ctx, url); err != nil {
 		return hash, err
 	}
 	if err := s.save(); err != nil {

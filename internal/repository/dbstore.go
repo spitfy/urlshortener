@@ -49,8 +49,7 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
-func (s *DBStore) Add(url URL) (string, error) {
-	ctx := context.Background()
+func (s *DBStore) Add(ctx context.Context, url URL) (string, error) {
 	_, err := s.conn.Exec(ctx,
 		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
 	if err != nil {
@@ -72,7 +71,7 @@ func (s *DBStore) Add(url URL) (string, error) {
 	return url.Hash, nil
 }
 
-func (s *DBStore) Get(hash string) (string, error) {
+func (s *DBStore) Get(_ context.Context, hash string) (string, error) {
 	var link string
 	row := s.conn.QueryRow(context.Background(), "SELECT original_url from urls where hash = $1", hash)
 	err := row.Scan(&link)

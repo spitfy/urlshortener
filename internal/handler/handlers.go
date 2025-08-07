@@ -27,7 +27,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.Get(hash)
+	link, err := h.service.Get(r.Context(), hash)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(err.Error()))
@@ -61,7 +61,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL, err := h.service.Add(string(body))
+	shortURL, err := h.service.Add(r.Context(), string(body))
 
 	if err != nil {
 		if errors.Is(err, repository.ErrExistsURL) {
@@ -98,7 +98,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL, err := h.service.Add(req.URL)
+	shortURL, err := h.service.Add(r.Context(), req.URL)
 	res := models.Response{Result: shortURL}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -138,7 +138,7 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batchResponse, err := h.service.BatchAdd(req)
+	batchResponse, err := h.service.BatchAdd(r.Context(), req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
