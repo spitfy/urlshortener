@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"math/big"
 	"net/url"
@@ -90,7 +91,7 @@ func (s *Service) makeURL(hash string) (string, error) {
 	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
 
 	if err != nil {
-		return "", errors.New("can't create short url")
+		return "", fmt.Errorf("can't create short url: %w", err)
 	}
 
 	return addr, nil

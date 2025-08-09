@@ -52,28 +52,30 @@ func (s *DBStore) Ping() error {
 func (s *DBStore) Add(ctx context.Context, url URL) (string, error) {
 	_, err := s.conn.Exec(ctx,
 		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			var hash string
-			err = s.conn.QueryRow(
-				ctx,
-				"SELECT hash FROM urls WHERE original_url=$1",
-				url.Link,
-			).Scan(&hash)
-			if err != nil {
-				return url.Hash, err
-			}
-			return hash, ErrExistsURL
+
+	var pgErr *pgconn.PgError
+	switch {
+	case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
+		var hash string
+		err = s.conn.QueryRow(
+			ctx,
+			"SELECT hash FROM urls WHERE original_url=$1",
+			url.Link,
+		).Scan(&hash)
+		if err != nil {
+			return url.Hash, err
 		}
+		return hash, ErrExistsURL
+	case err != nil:
 		return url.Hash, err
+	default:
+		return url.Hash, nil
 	}
-	return url.Hash, nil
 }
 
-func (s *DBStore) Get(_ context.Context, hash string) (string, error) {
+func (s *DBStore) Get(ctx context.Context, hash string) (string, error) {
 	var link string
-	row := s.conn.QueryRow(context.Background(), "SELECT original_url from urls where hash = $1", hash)
+	row := s.conn.QueryRow(ctx, "SELECT original_url from urls where hash = $1", hash)
 	err := row.Scan(&link)
 	if err != nil {
 		return "", err
