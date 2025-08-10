@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"github.com/spitfy/urlshortener/internal/config/db"
 	storageConf "github.com/spitfy/urlshortener/internal/repository/config"
 	"log"
 
@@ -16,14 +17,16 @@ type Config struct {
 	Service     serviceConf.Config
 	Logger      loggerConf.Config
 	FileStorage storageConf.Config
+	DB          db.Config
 }
 
 const (
 	DefaultServerAddr      string = ":8080"
 	DefaultServerURL       string = "http://localhost:8080"
 	DefaultLogLevel        string = "info"
-	DefaultFileStorage     string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"
+	DefaultFileStorage     string = ""
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
+	DefaultDatabaseDsn     string = ""
 )
 
 func GetConfig() *Config {
@@ -32,6 +35,7 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
 	flag.StringVar(&conf.FileStorage.FileStoragePath, "f", DefaultFileStorage, "file storage path")
+	flag.StringVar(&conf.DB.DatabaseDsn, "d", DefaultDatabaseDsn, "database DSN address")
 
 	flag.Parse()
 

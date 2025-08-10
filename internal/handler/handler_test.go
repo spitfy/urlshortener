@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
@@ -44,7 +45,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_Post(t *testing.T) {
-	store, err := repository.NewStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
@@ -97,9 +98,10 @@ func TestHandler_Post(t *testing.T) {
 }
 
 func TestHandler_Get(t *testing.T) {
-	store, err := repository.NewStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
-	_ = store.Add(repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
+	ctx := context.Background()
+	_, _ = store.Add(ctx, repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
 	handler := newHandler(service.NewService(cfg, store))
 	l := logger.InitMock()
 	srv = httptest.NewServer(newRouter(handler, l))
@@ -170,7 +172,7 @@ func TestHandler_Get(t *testing.T) {
 }
 
 func TestHandler_ShortenURL(t *testing.T) {
-	store, err := repository.NewStore(&cfg)
+	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	handler := newHandler(service.NewService(cfg, store))
 	srv = httptest.NewServer(http.HandlerFunc(handler.ShortenURL))
@@ -188,7 +190,7 @@ func TestHandler_ShortenURL(t *testing.T) {
 			method:       http.MethodGet,
 			body:         "",
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{
@@ -196,7 +198,7 @@ func TestHandler_ShortenURL(t *testing.T) {
 			method:       http.MethodGet,
 			body:         "",
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{
@@ -208,11 +210,11 @@ func TestHandler_ShortenURL(t *testing.T) {
 			expectedBody: false,
 		},
 		{
-			name:         "method_post_unsupported_type",
+			name:         "method_get_unsupported_type",
 			method:       http.MethodGet,
 			body:         `{"res": "https://www.perplexity.ai"}`,
 			contentType:  "application/json",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusMethodNotAllowed,
 			expectedBody: false,
 		},
 		{

@@ -11,3 +11,10 @@
 - инициализацию зависимостей (можно вынести в отдельный пакет `internal/app`)
 - настройку и запуск HTTP-сервера (можно вынести в отдельный пакет `internal/router`)
 - обработку сигналов завершения работы приложения
+
+Запуск сервера с БД
+`go run . -d "postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable"`
+Запуск с файловым хранилищем
+`go run . -f "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"`
+
+Для дебага `DATABASE_DSN="postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable"`

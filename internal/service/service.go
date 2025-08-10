@@ -1,8 +1,11 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
+	models "github.com/spitfy/urlshortener/internal/model"
 	"math/big"
 	"net/url"
 
@@ -25,39 +28,47 @@ func RandString(n int) string {
 }
 
 type Service struct {
-	store  Storer
+	store  repository.Storer
 	config config.Config
 }
 
-type Storer interface {
-	Add(url repository.URL) error
-	Get(hash string) (string, error)
-}
-
-func (s *Service) Add(link string) (string, error) {
+func (s *Service) Add(ctx context.Context, link string) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
 	}
 
 	hash := RandString(CharCnt)
-	u := repository.URL{
-		Link: link,
-		Hash: hash,
-	}
-	err := s.store.Add(u)
-	if err != nil {
-		return "", err
-	}
-	URL, err := s.makeURL(hash)
-	if err != nil {
-		return "", err
-	}
+	u := repository.URL{Link: link, Hash: hash}
+	hash, err := s.store.Add(ctx, u)
 
-	return URL, nil
+	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
+		return "", err
+	}
+	shortURL, errMakeURL := s.makeURL(hash)
+	if errMakeURL != nil {
+		return "", errMakeURL
+	}
+	if errors.Is(err, repository.ErrExistsURL) {
+		return shortURL, repository.ErrExistsURL
+	}
+	return shortURL, nil
 }
 
-func (s *Service) Get(hash string) (string, error) {
-	get, err := s.store.Get(hash)
+func (s *Service) BatchAdd(ctx context.Context, req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	res := make([]models.BatchCreateResponse, 0, len(req))
+	for _, r := range req {
+		shortURL, err := s.Add(ctx, r.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, models.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
+	}
+
+	return res, nil
+}
+
+func (s *Service) Get(ctx context.Context, hash string) (string, error) {
+	get, err := s.store.Get(ctx, hash)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +76,11 @@ func (s *Service) Get(hash string) (string, error) {
 	return get, nil
 }
 
-func NewService(cfg config.Config, store Storer) *Service {
+func (s *Service) Ping() error {
+	return s.store.Ping()
+}
+
+func NewService(cfg config.Config, store repository.Storer) *Service {
 	return &Service{
 		store:  store,
 		config: cfg,
@@ -76,7 +91,7 @@ func (s *Service) makeURL(hash string) (string, error) {
 	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
 
 	if err != nil {
-		return "", errors.New("can't create short url")
+		return "", fmt.Errorf("can't create short url: %w", err)
 	}
 
 	return addr, nil
