@@ -3,15 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
+	"github.com/spitfy/urlshortener/internal/service"
 	"io"
 	"log"
 	"mime"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/spitfy/urlshortener/internal/service"
 )
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +37,50 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func (h *Handler) GetByUserId(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cookie, err := r.Cookie("ID")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			http.Error(w, "unauthorized: cookie not found", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "error reading cookie", http.StatusBadRequest)
+		return
+	}
+	if cookie.Value == "" {
+		http.Error(w, "unauthorized: empty cookie value", http.StatusUnauthorized)
+		return
+	}
+
+	userID, ok := r.Context().Value("userId").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	res, err := h.service.GetByUserId(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		http.Error(w, "", http.StatusNoContent)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, "encoding error", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
+	log.Println("!!! Handler cookies:", r.Cookies())
+	log.Println("!!!!!!Request URL:", r.URL.Path)
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,7 +103,12 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL, err := h.service.Add(r.Context(), string(body))
+	userID, ok := r.Context().Value("userId").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	shortURL, err := h.service.Add(r.Context(), string(body), userID)
 
 	if err != nil {
 		if errors.Is(err, repository.ErrExistsURL) {
@@ -97,8 +144,12 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json body", http.StatusBadRequest)
 		return
 	}
-
-	shortURL, err := h.service.Add(r.Context(), req.URL)
+	userID, ok := r.Context().Value("userId").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	shortURL, err := h.service.Add(r.Context(), req.URL, userID)
 	res := models.Response{Result: shortURL}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -138,7 +189,12 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batchResponse, err := h.service.BatchAdd(r.Context(), req)
+	userID, ok := r.Context().Value("userId").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	batchResponse, err := h.service.BatchAdd(r.Context(), req, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

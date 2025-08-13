@@ -4,11 +4,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spitfy/urlshortener/internal/auth"
 	"github.com/spitfy/urlshortener/internal/config"
 )
 
 func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
-	h := newHandler(service)
+	a := auth.New(cfg.Auth.SecretKey)
+	h := newHandler(service, a)
 	router := newRouter(h, l)
 
 	server := &http.Server{
@@ -21,11 +23,12 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 
 func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
-	r.Get("/ping", gzipMiddleware(l.LogInfo(h.Ping)))
-	r.Get("/{hash}", gzipMiddleware(l.LogInfo(h.Get)))
-	r.Post("/api/shorten/batch", gzipMiddleware(l.LogInfo(h.Batch)))
-	r.Post("/api/shorten", gzipMiddleware(l.LogInfo(h.ShortenURL)))
-	r.Post("/", gzipMiddleware(l.LogInfo(h.Post)))
+	r.Get("/ping", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Ping))))
+	r.Get("/{hash}", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Get))))
+	r.Get("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.GetByUserId))))
+	r.Post("/api/shorten/batch", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Batch))))
+	r.Post("/api/shorten", h.authMiddleware(h.ShortenURL))
+	r.Post("/", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Post))))
 
 	return r
 }

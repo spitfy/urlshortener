@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -19,7 +20,6 @@ func newDBStore(conf *config.Config) (*DBStore, error) {
 	if err := migrate(conf); err != nil {
 		return nil, err
 	}
-
 	conn, err := pgx.Connect(context.Background(), conf.DB.DatabaseDsn)
 	if err != nil {
 		return nil, err
@@ -49,9 +49,11 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
-func (s *DBStore) Add(ctx context.Context, url URL) (string, error) {
+func (s *DBStore) Add(ctx context.Context, url URL, userId int) (string, error) {
 	_, err := s.conn.Exec(ctx,
-		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
+		`INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)`,
+		url.Hash, url.Link, userId,
+	)
 
 	var pgErr *pgconn.PgError
 	switch {
@@ -83,7 +85,31 @@ func (s *DBStore) Get(ctx context.Context, hash string) (string, error) {
 	return link, nil
 }
 
-func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
+func (s *DBStore) AllByUser(ctx context.Context, userId int) ([]URL, error) {
+	rows, err := s.conn.Query(ctx, "SELECT original_url, hash from urls where user_id = $1", userId)
+	if err != nil {
+		return nil, fmt.Errorf("error select data: %w", err)
+	}
+	defer rows.Close()
+
+	var res []URL
+	for rows.Next() {
+		var link, hash string
+		if err := rows.Scan(&link, &hash); err != nil {
+			return nil, err
+		}
+		res = append(res, URL{
+			Hash: hash,
+			Link: link,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userId int) error {
 	tx, err := s.conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -103,7 +129,8 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}()
 	batch := &pgx.Batch{}
 	for _, url := range urls {
-		batch.Queue("INSERT INTO urls (hash, original_url) VALUES ($1, $2)", url.Hash, url.Link)
+		batch.Queue("INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)",
+			url.Hash, url.Link, userId)
 	}
 
 	br := tx.SendBatch(ctx, batch)
@@ -119,4 +146,14 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}
 
 	return nil
+}
+
+func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
+	var id int
+	err := s.conn.QueryRow(ctx,
+		`INSERT INTO users DEFAULT VALUES RETURNING id`).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }

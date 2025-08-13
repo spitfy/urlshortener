@@ -32,14 +32,14 @@ type Service struct {
 	config config.Config
 }
 
-func (s *Service) Add(ctx context.Context, link string) (string, error) {
+func (s *Service) Add(ctx context.Context, link string, userId int) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
 	}
 
 	hash := RandString(CharCnt)
 	u := repository.URL{Link: link, Hash: hash}
-	hash, err := s.store.Add(ctx, u)
+	hash, err := s.store.Add(ctx, u, userId)
 
 	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
 		return "", err
@@ -54,30 +54,59 @@ func (s *Service) Add(ctx context.Context, link string) (string, error) {
 	return shortURL, nil
 }
 
-func (s *Service) BatchAdd(ctx context.Context, req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (s *Service) BatchAdd(
+	ctx context.Context,
+	req []models.BatchCreateRequest,
+	userId int,
+) ([]models.BatchCreateResponse, error) {
 	res := make([]models.BatchCreateResponse, 0, len(req))
 	for _, r := range req {
-		shortURL, err := s.Add(ctx, r.OriginalURL)
+		shortURL, err := s.Add(ctx, r.OriginalURL, userId)
 		if err != nil {
 			return nil, err
 		}
 		res = append(res, models.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
 	}
-
 	return res, nil
 }
 
 func (s *Service) Get(ctx context.Context, hash string) (string, error) {
-	get, err := s.store.Get(ctx, hash)
+	link, err := s.store.Get(ctx, hash)
 	if err != nil {
 		return "", err
 	}
-
-	return get, nil
+	return link, nil
 }
 
 func (s *Service) Ping() error {
 	return s.store.Ping()
+}
+
+func (s *Service) GetByUserId(ctx context.Context, id int) ([]models.LinkPair, error) {
+	links, err := s.store.AllByUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]models.LinkPair, 0, len(links))
+	for _, u := range links {
+		ShortURL, err := s.makeURL(u.Hash)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, models.LinkPair{
+			ShortURL:    ShortURL,
+			OriginalURL: u.Link,
+		})
+	}
+	return res, nil
+}
+
+func (s *Service) CreateUser(ctx context.Context) (int, error) {
+	id, err := s.store.CreateUser(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func NewService(cfg config.Config, store repository.Storer) *Service {
@@ -89,11 +118,9 @@ func NewService(cfg config.Config, store repository.Storer) *Service {
 
 func (s *Service) makeURL(hash string) (string, error) {
 	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
-
 	if err != nil {
 		return "", fmt.Errorf("can't create short url: %w", err)
 	}
-
 	return addr, nil
 }
 

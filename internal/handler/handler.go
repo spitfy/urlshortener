@@ -2,19 +2,23 @@ package handler
 
 import (
 	"context"
+	"github.com/spitfy/urlshortener/internal/auth"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"net/http"
 )
 
 type Handler struct {
 	service ServiceShortener
+	auth    *auth.AuthManager
 }
 
 type ServiceShortener interface {
-	Add(ctx context.Context, link string) (string, error)
-	BatchAdd(ctx context.Context, req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
+	Add(ctx context.Context, link string, userId int) (string, error)
+	BatchAdd(ctx context.Context, req []models.BatchCreateRequest, userId int) ([]models.BatchCreateResponse, error)
 	Get(ctx context.Context, hash string) (string, error)
 	Ping() error
+	GetByUserId(ctx context.Context, id int) ([]models.LinkPair, error)
+	CreateUser(ctx context.Context) (int, error)
 }
 
 type RequestLogger interface {
@@ -27,8 +31,9 @@ var allowedContent = map[string]bool{
 	"application/x-gzip": true,
 }
 
-func newHandler(s ServiceShortener) *Handler {
+func newHandler(s ServiceShortener, a *auth.AuthManager) *Handler {
 	return &Handler{
 		service: s,
+		auth:    a,
 	}
 }
