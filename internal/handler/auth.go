@@ -10,25 +10,23 @@ import (
 func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userID int
-		token, err := h.auth.GetTokenFromCookie(r)
-		if errors.Is(err, auth.ErrUnAuth) {
-			if cookies := r.Cookies(); len(cookies) > 0 {
-				if _, err := h.initCookie(w, r); err != nil {
+		var token string
+		var err error
+
+		token, err = h.auth.GetTokenFromCookie(r)
+		if err != nil {
+			if errors.Is(err, auth.ErrUnAuth) {
+				userID, token, err = h.createUserAndToken(w, r)
+				if err != nil {
 					http.Error(w, "error create user", http.StatusInternalServerError)
 					return
 				}
-				http.Error(w, "", http.StatusNoContent)
+			} else {
+				http.Error(w, "invalid cookie", http.StatusUnauthorized)
 				return
 			}
-			token, err = h.initCookie(w, r)
-			if err != nil {
-				http.Error(w, "error create user", http.StatusInternalServerError)
-				return
-			}
-		} else if err != nil {
-			http.Error(w, "invalid cookie", http.StatusUnauthorized)
-			return
 		}
+
 		if userID == 0 {
 			userID, err = h.auth.ParseUserID(token)
 			if err != nil {
@@ -36,15 +34,17 @@ func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
+
 		ctx := context.WithValue(r.Context(), "userID", userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
-func (h *Handler) initCookie(w http.ResponseWriter, r *http.Request) (string, error) {
+func (h *Handler) createUserAndToken(w http.ResponseWriter, r *http.Request) (int, string, error) {
 	userID, err := h.service.CreateUser(r.Context())
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	return h.auth.CreateToken(w, userID)
+	token, err := h.auth.CreateToken(w, userID)
+	return userID, token, err
 }

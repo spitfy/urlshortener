@@ -43,20 +43,6 @@ func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("ID")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			http.Error(w, "unauthorized: cookie not found", http.StatusUnauthorized)
-			return
-		}
-		http.Error(w, "error reading cookie", http.StatusBadRequest)
-		return
-	}
-	if cookie.Value == "" {
-		http.Error(w, "unauthorized: empty cookie value", http.StatusUnauthorized)
-		return
-	}
-
 	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
