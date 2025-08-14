@@ -16,11 +16,13 @@ var (
 )
 
 type Storer interface {
-	Add(ctx context.Context, url URL) (hash string, err error)
+	Add(ctx context.Context, url URL, userID int) (hash string, err error)
 	Get(ctx context.Context, hash string) (string, error)
 	Close() error
 	Ping() error
-	BatchAdd(ctx context.Context, urls []URL) error
+	BatchAdd(ctx context.Context, urls []URL, userID int) error
+	AllByUser(ctx context.Context, userID int) ([]URL, error)
+	CreateUser(ctx context.Context) (int, error)
 }
 
 func CreateStore(conf *config.Config) (Storer, error) {

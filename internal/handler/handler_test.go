@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/spitfy/urlshortener/internal/auth"
+	authConf "github.com/spitfy/urlshortener/internal/auth/config"
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 	"github.com/spitfy/urlshortener/internal/logger"
 	models "github.com/spitfy/urlshortener/internal/model"
@@ -30,7 +32,9 @@ var (
 		Handlers:    handlerConf.Config{ServerAddr: config.DefaultServerAddr},
 		Service:     serviceConf.Config{ServerURL: config.DefaultServerURL},
 		FileStorage: repoConf.Config{FileStoragePath: config.DefaultFileStorageTest},
+		Auth:        authConf.Config{SecretKey: config.SecretKey},
 	}
+	am = auth.New(cfg.Auth.SecretKey)
 )
 
 func TestMain(m *testing.M) {
@@ -47,8 +51,8 @@ func TestMain(m *testing.M) {
 func TestHandler_Post(t *testing.T) {
 	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
-	handler := newHandler(service.NewService(cfg, store))
-	srv = httptest.NewServer(http.HandlerFunc(handler.Post))
+	h := newHandler(service.NewService(cfg, store), am)
+	srv = httptest.NewServer(h.authMiddleware(h.Post))
 
 	tests := []struct {
 		name         string
@@ -101,8 +105,8 @@ func TestHandler_Get(t *testing.T) {
 	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
 	ctx := context.Background()
-	_, _ = store.Add(ctx, repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"})
-	handler := newHandler(service.NewService(cfg, store))
+	_, _ = store.Add(ctx, repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"}, -1)
+	handler := newHandler(service.NewService(cfg, store), am)
 	l := logger.InitMock()
 	srv = httptest.NewServer(newRouter(handler, l))
 
@@ -174,8 +178,9 @@ func TestHandler_Get(t *testing.T) {
 func TestHandler_ShortenURL(t *testing.T) {
 	store, err := repository.CreateStore(&cfg)
 	require.NoError(t, err, "error creating store")
-	handler := newHandler(service.NewService(cfg, store))
-	srv = httptest.NewServer(http.HandlerFunc(handler.ShortenURL))
+	h := newHandler(service.NewService(cfg, store), am)
+	srv = httptest.NewServer(h.authMiddleware(h.ShortenURL))
+	token, _ := am.BuildJWT(123)
 
 	tests := []struct {
 		name         string
@@ -236,10 +241,17 @@ func TestHandler_ShortenURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := resty.New().R()
-			req.SetHeader("Content-Type", tt.contentType)
-			req.SetBody(tt.body)
-			resp, err := req.Execute(tt.method, srv.URL)
+			client := resty.New()
+			//client.SetDebug(true)
+			resp, err := client.R().
+				SetHeader("Content-Type", tt.contentType).
+				SetBody(tt.body).
+				SetCookie(&http.Cookie{
+					Name:  "ID",
+					Value: token,
+					Path:  "/",
+				}).
+				Execute(tt.method, srv.URL)
 
 			assert.NoError(t, err, "error making HTTP request")
 			assert.Equal(t, tt.expectedCode, resp.StatusCode(), "Response code mismatch")
