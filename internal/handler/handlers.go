@@ -79,8 +79,6 @@ func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
-	log.Println("!!! Handler cookies:", r.Cookies())
-	log.Println("!!!!!!Request URL:", r.URL.Path)
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)

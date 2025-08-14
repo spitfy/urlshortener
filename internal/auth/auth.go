@@ -58,3 +58,17 @@ func (a *AuthManager) ParseUserID(tokenStr string) (int, error) {
 	}
 	return claims.UserID, nil
 }
+
+func (a *AuthManager) CreateToken(w http.ResponseWriter, userID int) (string, error) {
+	tokenString, err := a.BuildJWT(userID)
+	if err != nil {
+		return "", err
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "ID",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+	})
+	return tokenString, nil
+}
