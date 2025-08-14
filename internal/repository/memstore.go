@@ -50,9 +50,9 @@ func (s *MemStore) Close() error {
 	return nil
 }
 
-func (s *MemStore) BatchAdd(ctx context.Context, urls []URL, userId int) error {
+func (s *MemStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	for _, u := range urls {
-		if _, err := s.Add(ctx, u, userId); err != nil {
+		if _, err := s.Add(ctx, u, userID); err != nil {
 			return err
 		}
 	}

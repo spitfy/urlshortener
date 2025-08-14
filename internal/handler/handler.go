@@ -13,11 +13,11 @@ type Handler struct {
 }
 
 type ServiceShortener interface {
-	Add(ctx context.Context, link string, userId int) (string, error)
-	BatchAdd(ctx context.Context, req []models.BatchCreateRequest, userId int) ([]models.BatchCreateResponse, error)
+	Add(ctx context.Context, link string, userID int) (string, error)
+	BatchAdd(ctx context.Context, req []models.BatchCreateRequest, userID int) ([]models.BatchCreateResponse, error)
 	Get(ctx context.Context, hash string) (string, error)
 	Ping() error
-	GetByUserId(ctx context.Context, id int) ([]models.LinkPair, error)
+	GetByUserID(ctx context.Context, userID int) ([]models.LinkPair, error)
 	CreateUser(ctx context.Context) (int, error)
 }
 

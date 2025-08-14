@@ -25,9 +25,9 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/ping", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Ping))))
 	r.Get("/{hash}", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Get))))
-	r.Get("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.GetByUserId))))
+	r.Get("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.GetByUserID))))
 	r.Post("/api/shorten/batch", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Batch))))
-	r.Post("/api/shorten", h.authMiddleware(h.ShortenURL))
+	r.Post("/api/shorten", h.authMiddleware(gzipMiddleware(l.LogInfo(h.ShortenURL))))
 	r.Post("/", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Post))))
 
 	return r

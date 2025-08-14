@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	UnAuthErr = errors.New("unauthorized")
+	ErrUnAuth = errors.New("unauthorized")
 )
 
 type AuthManager struct {
@@ -28,12 +28,12 @@ func (a *AuthManager) GetTokenFromCookie(r *http.Request) (string, error) {
 	cookie, err := r.Cookie("ID")
 	if err != nil {
 		if err == http.ErrNoCookie {
-			return "", fmt.Errorf("%w: cookie not found", UnAuthErr)
+			return "", fmt.Errorf("%w: cookie not found", ErrUnAuth)
 		}
-		return "", fmt.Errorf("%w: error reading cookie", UnAuthErr)
+		return "", fmt.Errorf("%w: error reading cookie", ErrUnAuth)
 	}
 	if cookie.Value == "" {
-		return "", fmt.Errorf("%w: empty cookie value", UnAuthErr)
+		return "", fmt.Errorf("%w: empty cookie value", ErrUnAuth)
 	}
 	return cookie.Value, nil
 }

@@ -37,7 +37,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (h *Handler) GetByUserId(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -57,12 +57,12 @@ func (h *Handler) GetByUserId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value("userId").(int)
+	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	res, err := h.service.GetByUserId(r.Context(), userID)
+	res, err := h.service.GetByUserID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,7 +103,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value("userId").(int)
+	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -144,7 +144,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json body", http.StatusBadRequest)
 		return
 	}
-	userID, ok := r.Context().Value("userId").(int)
+	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -189,7 +189,7 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value("userId").(int)
+	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

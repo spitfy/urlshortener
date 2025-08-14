@@ -49,10 +49,10 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
-func (s *DBStore) Add(ctx context.Context, url URL, userId int) (string, error) {
+func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) {
 	_, err := s.conn.Exec(ctx,
 		`INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)`,
-		url.Hash, url.Link, userId,
+		url.Hash, url.Link, userID,
 	)
 
 	var pgErr *pgconn.PgError
@@ -85,8 +85,8 @@ func (s *DBStore) Get(ctx context.Context, hash string) (string, error) {
 	return link, nil
 }
 
-func (s *DBStore) AllByUser(ctx context.Context, userId int) ([]URL, error) {
-	rows, err := s.conn.Query(ctx, "SELECT original_url, hash from urls where user_id = $1", userId)
+func (s *DBStore) AllByUser(ctx context.Context, userID int) ([]URL, error) {
+	rows, err := s.conn.Query(ctx, "SELECT original_url, hash from urls where user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error select data: %w", err)
 	}
@@ -109,7 +109,7 @@ func (s *DBStore) AllByUser(ctx context.Context, userId int) ([]URL, error) {
 	return res, nil
 }
 
-func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userId int) error {
+func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	tx, err := s.conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userId int) error {
 	batch := &pgx.Batch{}
 	for _, url := range urls {
 		batch.Queue("INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)",
-			url.Hash, url.Link, userId)
+			url.Hash, url.Link, userID)
 	}
 
 	br := tx.SendBatch(ctx, batch)

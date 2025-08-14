@@ -32,14 +32,14 @@ type Service struct {
 	config config.Config
 }
 
-func (s *Service) Add(ctx context.Context, link string, userId int) (string, error) {
+func (s *Service) Add(ctx context.Context, link string, userID int) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
 	}
 
 	hash := RandString(CharCnt)
 	u := repository.URL{Link: link, Hash: hash}
-	hash, err := s.store.Add(ctx, u, userId)
+	hash, err := s.store.Add(ctx, u, userID)
 
 	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
 		return "", err
@@ -57,11 +57,11 @@ func (s *Service) Add(ctx context.Context, link string, userId int) (string, err
 func (s *Service) BatchAdd(
 	ctx context.Context,
 	req []models.BatchCreateRequest,
-	userId int,
+	userID int,
 ) ([]models.BatchCreateResponse, error) {
 	res := make([]models.BatchCreateResponse, 0, len(req))
 	for _, r := range req {
-		shortURL, err := s.Add(ctx, r.OriginalURL, userId)
+		shortURL, err := s.Add(ctx, r.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (s *Service) Ping() error {
 	return s.store.Ping()
 }
 
-func (s *Service) GetByUserId(ctx context.Context, id int) ([]models.LinkPair, error) {
+func (s *Service) GetByUserID(ctx context.Context, id int) ([]models.LinkPair, error) {
 	links, err := s.store.AllByUser(ctx, id)
 	if err != nil {
 		return nil, err

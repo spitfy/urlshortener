@@ -93,8 +93,8 @@ func (s *FileStore) init() (map[string]string, error) {
 	return links, nil
 }
 
-func (s *FileStore) Add(ctx context.Context, url URL, userId int) (string, error) {
-	if hash, err := s.MemStore.Add(ctx, url, userId); err != nil {
+func (s *FileStore) Add(ctx context.Context, url URL, userID int) (string, error) {
+	if hash, err := s.MemStore.Add(ctx, url, userID); err != nil {
 		return hash, err
 	}
 	if err := s.save(); err != nil {
@@ -111,8 +111,8 @@ func (s *FileStore) Close() error {
 	return nil
 }
 
-func (s *FileStore) BatchAdd(ctx context.Context, urls []URL, userId int) error {
-	if err := s.MemStore.BatchAdd(ctx, urls, userId); err != nil {
+func (s *FileStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
+	if err := s.MemStore.BatchAdd(ctx, urls, userID); err != nil {
 		return err
 	}
 	if err := s.save(); err != nil {

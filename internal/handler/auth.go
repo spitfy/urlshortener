@@ -10,7 +10,7 @@ import (
 func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := h.auth.GetTokenFromCookie(r)
-		if errors.Is(err, auth.UnAuthErr) {
+		if errors.Is(err, auth.ErrUnAuth) {
 			userID, err := h.service.CreateUser(r.Context())
 			if err != nil {
 				http.Error(w, "error create user", http.StatusInternalServerError)
@@ -33,13 +33,13 @@ func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		userId, err := h.auth.ParseUserID(token)
+		userID, err := h.auth.ParseUserID(token)
 		if err != nil {
 			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "userId", userId)
+		ctx := context.WithValue(r.Context(), "userID", userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
