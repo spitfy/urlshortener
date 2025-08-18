@@ -31,7 +31,7 @@ func TestStore_Add(t *testing.T) {
 		link URL
 		want map[string]string
 	}{
-		{"success", URL{"https://github.com/", "ASDQWE23"}, map[string]string{"ASDQWE23": "https://github.com/"}},
+		{"success", URL{Link: "https://github.com/", Hash: "ASDQWE23"}, map[string]string{"ASDQWE23": "https://github.com/"}},
 	}
 	ctx := context.Background()
 	for _, tt := range tests {
