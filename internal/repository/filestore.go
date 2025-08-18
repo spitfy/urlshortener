@@ -47,12 +47,8 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	return &store, nil
 }
 
-func (s *FileStore) Get(ctx context.Context, hash string) (string, error) {
-	link, err := s.MemStore.Get(ctx, hash)
-	if err != nil {
-		return "", err
-	}
-	return link, nil
+func (s *FileStore) Get(ctx context.Context, hash string) (URL, error) {
+	return s.MemStore.Get(ctx, hash)
 }
 
 func (s *FileStore) getStore() (LinkList, error) {

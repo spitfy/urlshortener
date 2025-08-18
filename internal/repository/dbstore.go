@@ -75,14 +75,14 @@ func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) 
 	}
 }
 
-func (s *DBStore) Get(ctx context.Context, hash string) (string, error) {
-	var link string
-	row := s.conn.QueryRow(ctx, "SELECT original_url from urls where hash = $1", hash)
-	err := row.Scan(&link)
+func (s *DBStore) Get(ctx context.Context, hash string) (URL, error) {
+	var u URL
+	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted from urls where hash = $1", hash)
+	err := row.Scan(&u.Hash, &u.Link, &u.DeletedFlag)
 	if err != nil {
-		return "", err
+		return u, err
 	}
-	return link, nil
+	return u, nil
 }
 
 func (s *DBStore) AllByUser(ctx context.Context, userID int) ([]URL, error) {

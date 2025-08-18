@@ -70,12 +70,8 @@ func (s *Service) BatchAdd(
 	return res, nil
 }
 
-func (s *Service) Get(ctx context.Context, hash string) (string, error) {
-	link, err := s.store.Get(ctx, hash)
-	if err != nil {
-		return "", err
-	}
-	return link, nil
+func (s *Service) Get(ctx context.Context, hash string) (repository.URL, error) {
+	return s.store.Get(ctx, hash)
 }
 
 func (s *Service) Ping() error {

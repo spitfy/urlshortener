@@ -28,14 +28,17 @@ func (s *MemStore) Add(_ context.Context, url URL, _ int) (hash string, err erro
 	return url.Hash, nil
 }
 
-func (s *MemStore) Get(_ context.Context, hash string) (string, error) {
+func (s *MemStore) Get(_ context.Context, hash string) (URL, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	res, ok := s.s[hash]
+	link, ok := s.s[hash]
 	if !ok {
-		return "", fmt.Errorf("data not found for n = %s", hash)
+		return URL{}, fmt.Errorf("data not found for n = %s", hash)
 	}
-	return res, nil
+	return URL{
+		Link: link,
+		Hash: hash,
+	}, nil
 }
 
 func (s *MemStore) Ping() error {

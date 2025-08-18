@@ -26,14 +26,18 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.Get(r.Context(), hash)
+	u, err := h.service.Get(r.Context(), hash)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+	if u.DeletedFlag {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
 
-	w.Header().Add("Location", link)
+	w.Header().Add("Location", u.Link)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 

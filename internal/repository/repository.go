@@ -7,8 +7,9 @@ import (
 )
 
 type URL struct {
-	Link string
-	Hash string
+	Link        string
+	Hash        string
+	DeletedFlag bool
 }
 
 var (
@@ -17,7 +18,7 @@ var (
 
 type Storer interface {
 	Add(ctx context.Context, url URL, userID int) (hash string, err error)
-	Get(ctx context.Context, hash string) (string, error)
+	Get(ctx context.Context, hash string) (URL, error)
 	Close() error
 	Ping() error
 	BatchAdd(ctx context.Context, urls []URL, userID int) error
