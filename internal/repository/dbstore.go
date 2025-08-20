@@ -148,6 +148,28 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	return nil
 }
 
+func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
+	tx, err := s.conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, "UPDATE urls set is_deleted = true WHERE hash = ANY($1) AND user_id = $2",
+		uh.Hash, uh.UserID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
 	var id int
 	err := s.conn.QueryRow(ctx,

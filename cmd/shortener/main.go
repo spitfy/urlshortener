@@ -34,6 +34,7 @@ func run() (err error) {
 		}
 	}()
 	s := service.NewService(*cfg, store)
+
 	l, err := logger.Initialize(cfg.Logger.LogLevel)
 	if err != nil {
 		return err

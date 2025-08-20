@@ -20,6 +20,7 @@ type ServiceShortener interface {
 	Ping() error
 	GetByUserID(ctx context.Context, userID int) ([]models.LinkPair, error)
 	CreateUser(ctx context.Context) (int, error)
+	DeleteEnqueue(ctx context.Context, req []string, userID int)
 }
 
 type RequestLogger interface {

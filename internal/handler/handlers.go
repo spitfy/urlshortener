@@ -197,6 +197,35 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.Header().Set("Allow", http.MethodDelete)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var req []string
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	h.service.DeleteEnqueue(r.Context(), req, userID)
+	w.WriteHeader(http.StatusAccepted)
+}
+
 func (h *Handler) Ping(w http.ResponseWriter, _ *http.Request) {
 	if err := h.service.Ping(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

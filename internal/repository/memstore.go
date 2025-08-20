@@ -65,3 +65,7 @@ func (s *MemStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 func (s *MemStore) CreateUser(_ context.Context) (int, error) {
 	return -1, nil
 }
+
+func (s *MemStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
+	return nil
+}

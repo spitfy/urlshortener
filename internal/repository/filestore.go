@@ -148,3 +148,7 @@ func (s *FileStore) AllByUser(_ context.Context, _ int) ([]URL, error) {
 func (s *FileStore) CreateUser(_ context.Context) (int, error) {
 	return -1, nil
 }
+
+func (s *FileStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
+	return nil
+}

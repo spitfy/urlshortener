@@ -12,6 +12,11 @@ type URL struct {
 	DeletedFlag bool
 }
 
+type UserHash struct {
+	UserID int
+	Hash   []string
+}
+
 var (
 	ErrExistsURL = errors.New("URL already exists")
 )
@@ -22,6 +27,7 @@ type Storer interface {
 	Close() error
 	Ping() error
 	BatchAdd(ctx context.Context, urls []URL, userID int) error
+	BatchDelete(ctx context.Context, uh UserHash) (err error)
 	AllByUser(ctx context.Context, userID int) ([]URL, error)
 	CreateUser(ctx context.Context) (int, error)
 }

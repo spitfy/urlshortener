@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	models "github.com/spitfy/urlshortener/internal/model"
+	"log"
 	"math/big"
 	"net/url"
+	"runtime"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -28,8 +30,39 @@ func RandString(n int) string {
 }
 
 type Service struct {
-	store  repository.Storer
-	config config.Config
+	store   repository.Storer
+	config  config.Config
+	deleteQ chan repository.UserHash
+}
+
+func NewService(cfg config.Config, store repository.Storer) *Service {
+	s := &Service{
+		store:   store,
+		config:  cfg,
+		deleteQ: make(chan repository.UserHash, 100),
+	}
+
+	maxProcs := runtime.GOMAXPROCS(0)
+	for i := 0; i < maxProcs; i++ {
+		go s.runDeleteWorker()
+	}
+
+	return s
+}
+
+func (s *Service) runDeleteWorker() {
+	for uh := range s.deleteQ {
+		if err := s.store.BatchDelete(context.Background(), uh); err != nil {
+			log.Printf("batch delete error: %v", err)
+		}
+	}
+}
+
+func (s *Service) DeleteEnqueue(_ context.Context, hashes []string, userID int) {
+	s.deleteQ <- repository.UserHash{
+		UserID: userID,
+		Hash:   hashes,
+	}
 }
 
 func (s *Service) Add(ctx context.Context, link string, userID int) (string, error) {
@@ -103,13 +136,6 @@ func (s *Service) CreateUser(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return id, nil
-}
-
-func NewService(cfg config.Config, store repository.Storer) *Service {
-	return &Service{
-		store:  store,
-		config: cfg,
-	}
 }
 
 func (s *Service) makeURL(hash string) (string, error) {
