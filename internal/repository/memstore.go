@@ -49,9 +49,7 @@ func (s *MemStore) AllByUser(_ context.Context, _ int) ([]URL, error) {
 	return make([]URL, 0), nil
 }
 
-func (s *MemStore) Close() error {
-	return nil
-}
+func (s *MemStore) Close() {}
 
 func (s *MemStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	for _, u := range urls {

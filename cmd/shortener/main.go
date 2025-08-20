@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/spitfy/urlshortener/internal/logger"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"log"
@@ -23,16 +22,7 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		cerr := store.Close()
-		if cerr != nil {
-			if err != nil {
-				err = fmt.Errorf("%w; close error: %v", err, cerr)
-			} else {
-				err = cerr
-			}
-		}
-	}()
+	defer store.Close()
 	s := service.NewService(*cfg, store)
 
 	l, err := logger.Initialize(cfg.Logger.LogLevel)

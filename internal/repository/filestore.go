@@ -103,9 +103,7 @@ func (s *FileStore) Ping() error {
 	return nil
 }
 
-func (s *FileStore) Close() error {
-	return nil
-}
+func (s *FileStore) Close() {}
 
 func (s *FileStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	if err := s.MemStore.BatchAdd(ctx, urls, userID); err != nil {

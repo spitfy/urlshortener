@@ -24,7 +24,7 @@ var (
 type Storer interface {
 	Add(ctx context.Context, url URL, userID int) (hash string, err error)
 	Get(ctx context.Context, hash string) (URL, error)
-	Close() error
+	Close()
 	Ping() error
 	BatchAdd(ctx context.Context, urls []URL, userID int) error
 	BatchDelete(ctx context.Context, uh UserHash) (err error)

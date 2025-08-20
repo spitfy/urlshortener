@@ -7,26 +7,32 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/migration"
 )
 
 type DBStore struct {
 	conf *config.Config
-	conn *pgx.Conn
+	conn *pgxpool.Pool
 }
 
 func newDBStore(conf *config.Config) (*DBStore, error) {
 	if err := migrate(conf); err != nil {
 		return nil, err
 	}
-	conn, err := pgx.Connect(context.Background(), conf.DB.DatabaseDsn)
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, conf.DB.DatabaseDsn)
 	if err != nil {
+		return nil, err
+	}
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, err
 	}
 	return &DBStore{
 		conf,
-		conn,
+		pool,
 	}, nil
 }
 
@@ -38,8 +44,8 @@ func migrate(conf *config.Config) error {
 	return nil
 }
 
-func (s *DBStore) Close() error {
-	return s.conn.Close(context.Background())
+func (s *DBStore) Close() {
+	s.conn.Close()
 }
 
 func (s *DBStore) Ping() error {
