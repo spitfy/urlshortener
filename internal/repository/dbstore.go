@@ -81,9 +81,9 @@ func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) 
 	}
 }
 
-func (s *DBStore) Get(ctx context.Context, hash string) (URL, error) {
+func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 	var u URL
-	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted from urls where hash = $1", hash)
+	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted FROM urls WHERE hash = $1", hash)
 	err := row.Scan(&u.Hash, &u.Link, &u.DeletedFlag)
 	if err != nil {
 		return u, err
@@ -91,8 +91,8 @@ func (s *DBStore) Get(ctx context.Context, hash string) (URL, error) {
 	return u, nil
 }
 
-func (s *DBStore) AllByUser(ctx context.Context, userID int) ([]URL, error) {
-	rows, err := s.conn.Query(ctx, "SELECT original_url, hash from urls where user_id = $1", userID)
+func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
+	rows, err := s.conn.Query(ctx, "SELECT original_url, hash FROM urls where user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error select data: %w", err)
 	}
@@ -167,7 +167,7 @@ func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
 		}
 	}()
 
-	_, err = tx.Exec(ctx, "UPDATE urls set is_deleted = true WHERE hash = ANY($1) AND user_id = $2",
+	_, err = tx.Exec(ctx, "UPDATE urls SET is_deleted = true WHERE hash = ANY($1) AND user_id = $2",
 		uh.Hash, uh.UserID)
 	if err != nil {
 		return err

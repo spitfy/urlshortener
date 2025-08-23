@@ -28,7 +28,7 @@ func (s *MemStore) Add(_ context.Context, url URL, _ int) (hash string, err erro
 	return url.Hash, nil
 }
 
-func (s *MemStore) Get(_ context.Context, hash string) (URL, error) {
+func (s *MemStore) GetByHash(_ context.Context, hash string) (URL, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	link, ok := s.s[hash]
@@ -45,7 +45,7 @@ func (s *MemStore) Ping() error {
 	return nil
 }
 
-func (s *MemStore) AllByUser(_ context.Context, _ int) ([]URL, error) {
+func (s *MemStore) GetByUserID(_ context.Context, _ int) ([]URL, error) {
 	return make([]URL, 0), nil
 }
 

@@ -47,8 +47,8 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	return &store, nil
 }
 
-func (s *FileStore) Get(ctx context.Context, hash string) (URL, error) {
-	return s.MemStore.Get(ctx, hash)
+func (s *FileStore) GetByHash(ctx context.Context, hash string) (URL, error) {
+	return s.MemStore.GetByHash(ctx, hash)
 }
 
 func (s *FileStore) getStore() (LinkList, error) {
@@ -139,7 +139,7 @@ func (s *FileStore) save() error {
 	return os.Rename(tmpPath, s.file.Name())
 }
 
-func (s *FileStore) AllByUser(_ context.Context, _ int) ([]URL, error) {
+func (s *FileStore) GetByUserID(_ context.Context, _ int) ([]URL, error) {
 	return make([]URL, 0), nil
 }
 

@@ -103,8 +103,8 @@ func (s *Service) BatchAdd(
 	return res, nil
 }
 
-func (s *Service) Get(ctx context.Context, hash string) (repository.URL, error) {
-	return s.store.Get(ctx, hash)
+func (s *Service) GetByHash(ctx context.Context, hash string) (repository.URL, error) {
+	return s.store.GetByHash(ctx, hash)
 }
 
 func (s *Service) Ping() error {
@@ -112,7 +112,7 @@ func (s *Service) Ping() error {
 }
 
 func (s *Service) GetByUserID(ctx context.Context, id int) ([]models.LinkPair, error) {
-	links, err := s.store.AllByUser(ctx, id)
+	links, err := s.store.GetByUserID(ctx, id)
 	if err != nil {
 		return nil, err
 	}

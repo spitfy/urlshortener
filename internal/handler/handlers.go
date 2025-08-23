@@ -26,7 +26,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.service.Get(r.Context(), hash)
+	u, err := h.service.GetByHash(r.Context(), hash)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(err.Error()))
@@ -58,7 +58,7 @@ func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(res) == 0 {
-		http.Error(w, "", http.StatusNoContent)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -157,7 +157,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) BatchAdd(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)

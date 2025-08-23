@@ -27,7 +27,7 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r.Get("/{hash}", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Get))))
 	r.Get("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.GetByUserID))))
 	r.Delete("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Delete))))
-	r.Post("/api/shorten/batch", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Batch))))
+	r.Post("/api/shorten/batch", h.authMiddleware(gzipMiddleware(l.LogInfo(h.BatchAdd))))
 	r.Post("/api/shorten", h.authMiddleware(gzipMiddleware(l.LogInfo(h.ShortenURL))))
 	r.Post("/", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Post))))
 
