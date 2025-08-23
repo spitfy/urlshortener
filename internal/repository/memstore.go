@@ -18,7 +18,7 @@ func newMemStore() *MemStore {
 	}
 }
 
-func (s *MemStore) Add(_ context.Context, url URL) (hash string, err error) {
+func (s *MemStore) Add(_ context.Context, url URL, _ int) (hash string, err error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, ok := s.s[url.Hash]; ok {
@@ -28,29 +28,42 @@ func (s *MemStore) Add(_ context.Context, url URL) (hash string, err error) {
 	return url.Hash, nil
 }
 
-func (s *MemStore) Get(_ context.Context, hash string) (string, error) {
+func (s *MemStore) GetByHash(_ context.Context, hash string) (URL, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	res, ok := s.s[hash]
+	link, ok := s.s[hash]
 	if !ok {
-		return "", fmt.Errorf("data not found for n = %s", hash)
+		return URL{}, fmt.Errorf("data not found for n = %s", hash)
 	}
-	return res, nil
+	return URL{
+		Link: link,
+		Hash: hash,
+	}, nil
 }
 
 func (s *MemStore) Ping() error {
 	return nil
 }
 
-func (s *MemStore) Close() error {
-	return nil
+func (s *MemStore) GetByUserID(_ context.Context, _ int) ([]URL, error) {
+	return make([]URL, 0), nil
 }
 
-func (s *MemStore) BatchAdd(ctx context.Context, urls []URL) error {
+func (s *MemStore) Close() {}
+
+func (s *MemStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	for _, u := range urls {
-		if _, err := s.Add(ctx, u); err != nil {
+		if _, err := s.Add(ctx, u, userID); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *MemStore) CreateUser(_ context.Context) (int, error) {
+	return -1, nil
+}
+
+func (s *MemStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
 	return nil
 }
