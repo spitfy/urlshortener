@@ -47,12 +47,8 @@ func newFileStore(config *config.Config) (*FileStore, error) {
 	return &store, nil
 }
 
-func (s *FileStore) Get(ctx context.Context, hash string) (string, error) {
-	link, err := s.MemStore.Get(ctx, hash)
-	if err != nil {
-		return "", err
-	}
-	return link, nil
+func (s *FileStore) GetByHash(ctx context.Context, hash string) (URL, error) {
+	return s.MemStore.GetByHash(ctx, hash)
 }
 
 func (s *FileStore) getStore() (LinkList, error) {
@@ -93,8 +89,8 @@ func (s *FileStore) init() (map[string]string, error) {
 	return links, nil
 }
 
-func (s *FileStore) Add(ctx context.Context, url URL) (string, error) {
-	if hash, err := s.MemStore.Add(ctx, url); err != nil {
+func (s *FileStore) Add(ctx context.Context, url URL, userID int) (string, error) {
+	if hash, err := s.MemStore.Add(ctx, url, userID); err != nil {
 		return hash, err
 	}
 	if err := s.save(); err != nil {
@@ -107,12 +103,10 @@ func (s *FileStore) Ping() error {
 	return nil
 }
 
-func (s *FileStore) Close() error {
-	return nil
-}
+func (s *FileStore) Close() {}
 
-func (s *FileStore) BatchAdd(ctx context.Context, urls []URL) error {
-	if err := s.MemStore.BatchAdd(ctx, urls); err != nil {
+func (s *FileStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
+	if err := s.MemStore.BatchAdd(ctx, urls, userID); err != nil {
 		return err
 	}
 	if err := s.save(); err != nil {
@@ -143,4 +137,16 @@ func (s *FileStore) save() error {
 	}
 
 	return os.Rename(tmpPath, s.file.Name())
+}
+
+func (s *FileStore) GetByUserID(_ context.Context, _ int) ([]URL, error) {
+	return make([]URL, 0), nil
+}
+
+func (s *FileStore) CreateUser(_ context.Context) (int, error) {
+	return -1, nil
+}
+
+func (s *FileStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
+	return nil
 }

@@ -3,15 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
+	"github.com/spitfy/urlshortener/internal/service"
 	"io"
 	"log"
 	"mime"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/spitfy/urlshortener/internal/service"
 )
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -27,15 +26,46 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := h.service.Get(r.Context(), hash)
+	u, err := h.service.GetByHash(r.Context(), hash)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+	if u.DeletedFlag {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
 
-	w.Header().Add("Location", link)
+	w.Header().Add("Location", u.Link)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	res, err := h.service.GetByUserID(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, "encoding error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +91,12 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL, err := h.service.Add(r.Context(), string(body))
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	shortURL, err := h.service.Add(r.Context(), string(body), userID)
 
 	if err != nil {
 		if errors.Is(err, repository.ErrExistsURL) {
@@ -97,8 +132,12 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json body", http.StatusBadRequest)
 		return
 	}
-
-	shortURL, err := h.service.Add(r.Context(), req.URL)
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	shortURL, err := h.service.Add(r.Context(), req.URL, userID)
 	res := models.Response{Result: shortURL}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -118,7 +157,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) BatchAdd(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		w.WriteHeader(http.StatusBadRequest)
@@ -138,7 +177,12 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batchResponse, err := h.service.BatchAdd(r.Context(), req)
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	batchResponse, err := h.service.BatchAdd(r.Context(), req, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -151,6 +195,35 @@ func (h *Handler) Batch(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.Header().Set("Allow", http.MethodDelete)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var req []string
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	h.service.DeleteEnqueue(r.Context(), req, userID)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (h *Handler) Ping(w http.ResponseWriter, _ *http.Request) {

@@ -3,30 +3,36 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/migration"
 )
 
 type DBStore struct {
 	conf *config.Config
-	conn *pgx.Conn
+	conn *pgxpool.Pool
 }
 
 func newDBStore(conf *config.Config) (*DBStore, error) {
 	if err := migrate(conf); err != nil {
 		return nil, err
 	}
-
-	conn, err := pgx.Connect(context.Background(), conf.DB.DatabaseDsn)
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, conf.DB.DatabaseDsn)
 	if err != nil {
+		return nil, err
+	}
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, err
 	}
 	return &DBStore{
 		conf,
-		conn,
+		pool,
 	}, nil
 }
 
@@ -38,8 +44,8 @@ func migrate(conf *config.Config) error {
 	return nil
 }
 
-func (s *DBStore) Close() error {
-	return s.conn.Close(context.Background())
+func (s *DBStore) Close() {
+	s.conn.Close()
 }
 
 func (s *DBStore) Ping() error {
@@ -49,9 +55,11 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
-func (s *DBStore) Add(ctx context.Context, url URL) (string, error) {
+func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) {
 	_, err := s.conn.Exec(ctx,
-		`INSERT INTO urls (hash, original_url) VALUES ($1, $2)`, url.Hash, url.Link)
+		`INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)`,
+		url.Hash, url.Link, userID,
+	)
 
 	var pgErr *pgconn.PgError
 	switch {
@@ -73,17 +81,41 @@ func (s *DBStore) Add(ctx context.Context, url URL) (string, error) {
 	}
 }
 
-func (s *DBStore) Get(ctx context.Context, hash string) (string, error) {
-	var link string
-	row := s.conn.QueryRow(ctx, "SELECT original_url from urls where hash = $1", hash)
-	err := row.Scan(&link)
+func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
+	var u URL
+	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted FROM urls WHERE hash = $1", hash)
+	err := row.Scan(&u.Hash, &u.Link, &u.DeletedFlag)
 	if err != nil {
-		return "", err
+		return u, err
 	}
-	return link, nil
+	return u, nil
 }
 
-func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
+func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
+	rows, err := s.conn.Query(ctx, "SELECT original_url, hash FROM urls where user_id = $1", userID)
+	if err != nil {
+		return nil, fmt.Errorf("error select data: %w", err)
+	}
+	defer rows.Close()
+
+	var res []URL
+	for rows.Next() {
+		var link, hash string
+		if err := rows.Scan(&link, &hash); err != nil {
+			return nil, err
+		}
+		res = append(res, URL{
+			Hash: hash,
+			Link: link,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	tx, err := s.conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -103,7 +135,8 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}()
 	batch := &pgx.Batch{}
 	for _, url := range urls {
-		batch.Queue("INSERT INTO urls (hash, original_url) VALUES ($1, $2)", url.Hash, url.Link)
+		batch.Queue("INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)",
+			url.Hash, url.Link, userID)
 	}
 
 	br := tx.SendBatch(ctx, batch)
@@ -119,4 +152,36 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL) error {
 	}
 
 	return nil
+}
+
+func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
+	tx, err := s.conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, "UPDATE urls SET is_deleted = true WHERE hash = ANY($1) AND user_id = $2",
+		uh.Hash, uh.UserID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
+	var id int
+	err := s.conn.QueryRow(ctx,
+		`INSERT INTO users DEFAULT VALUES RETURNING id`).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }

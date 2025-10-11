@@ -7,8 +7,14 @@ import (
 )
 
 type URL struct {
-	Link string
-	Hash string
+	Link        string
+	Hash        string
+	DeletedFlag bool
+}
+
+type UserHash struct {
+	UserID int
+	Hash   []string
 }
 
 var (
@@ -16,11 +22,14 @@ var (
 )
 
 type Storer interface {
-	Add(ctx context.Context, url URL) (hash string, err error)
-	Get(ctx context.Context, hash string) (string, error)
-	Close() error
+	Add(ctx context.Context, url URL, userID int) (hash string, err error)
+	GetByHash(ctx context.Context, hash string) (URL, error)
+	Close()
 	Ping() error
-	BatchAdd(ctx context.Context, urls []URL) error
+	BatchAdd(ctx context.Context, urls []URL, userID int) error
+	BatchDelete(ctx context.Context, uh UserHash) (err error)
+	GetByUserID(ctx context.Context, userID int) ([]URL, error)
+	CreateUser(ctx context.Context) (int, error)
 }
 
 func CreateStore(conf *config.Config) (Storer, error) {

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	models "github.com/spitfy/urlshortener/internal/model"
+	"log"
 	"math/big"
 	"net/url"
+	"runtime"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -28,18 +30,49 @@ func RandString(n int) string {
 }
 
 type Service struct {
-	store  repository.Storer
-	config config.Config
+	store   repository.Storer
+	config  config.Config
+	deleteQ chan repository.UserHash
 }
 
-func (s *Service) Add(ctx context.Context, link string) (string, error) {
+func NewService(cfg config.Config, store repository.Storer) *Service {
+	s := &Service{
+		store:   store,
+		config:  cfg,
+		deleteQ: make(chan repository.UserHash, 100),
+	}
+
+	maxProcs := runtime.GOMAXPROCS(0)
+	for i := 0; i < maxProcs; i++ {
+		go s.runDeleteWorker()
+	}
+
+	return s
+}
+
+func (s *Service) runDeleteWorker() {
+	for uh := range s.deleteQ {
+		if err := s.store.BatchDelete(context.Background(), uh); err != nil {
+			log.Printf("batch delete error: %v", err)
+		}
+	}
+}
+
+func (s *Service) DeleteEnqueue(_ context.Context, hashes []string, userID int) {
+	s.deleteQ <- repository.UserHash{
+		UserID: userID,
+		Hash:   hashes,
+	}
+}
+
+func (s *Service) Add(ctx context.Context, link string, userID int) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
 	}
 
 	hash := RandString(CharCnt)
 	u := repository.URL{Link: link, Hash: hash}
-	hash, err := s.store.Add(ctx, u)
+	hash, err := s.store.Add(ctx, u, userID)
 
 	if err != nil && !errors.Is(err, repository.ErrExistsURL) {
 		return "", err
@@ -54,46 +87,62 @@ func (s *Service) Add(ctx context.Context, link string) (string, error) {
 	return shortURL, nil
 }
 
-func (s *Service) BatchAdd(ctx context.Context, req []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (s *Service) BatchAdd(
+	ctx context.Context,
+	req []models.BatchCreateRequest,
+	userID int,
+) ([]models.BatchCreateResponse, error) {
 	res := make([]models.BatchCreateResponse, 0, len(req))
 	for _, r := range req {
-		shortURL, err := s.Add(ctx, r.OriginalURL)
+		shortURL, err := s.Add(ctx, r.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
 		res = append(res, models.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
 	}
-
 	return res, nil
 }
 
-func (s *Service) Get(ctx context.Context, hash string) (string, error) {
-	get, err := s.store.Get(ctx, hash)
-	if err != nil {
-		return "", err
-	}
-
-	return get, nil
+func (s *Service) GetByHash(ctx context.Context, hash string) (repository.URL, error) {
+	return s.store.GetByHash(ctx, hash)
 }
 
 func (s *Service) Ping() error {
 	return s.store.Ping()
 }
 
-func NewService(cfg config.Config, store repository.Storer) *Service {
-	return &Service{
-		store:  store,
-		config: cfg,
+func (s *Service) GetByUserID(ctx context.Context, id int) ([]models.LinkPair, error) {
+	links, err := s.store.GetByUserID(ctx, id)
+	if err != nil {
+		return nil, err
 	}
+	res := make([]models.LinkPair, 0, len(links))
+	for _, u := range links {
+		ShortURL, err := s.makeURL(u.Hash)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, models.LinkPair{
+			ShortURL:    ShortURL,
+			OriginalURL: u.Link,
+		})
+	}
+	return res, nil
+}
+
+func (s *Service) CreateUser(ctx context.Context) (int, error) {
+	id, err := s.store.CreateUser(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (s *Service) makeURL(hash string) (string, error) {
 	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
-
 	if err != nil {
 		return "", fmt.Errorf("can't create short url: %w", err)
 	}
-
 	return addr, nil
 }
 

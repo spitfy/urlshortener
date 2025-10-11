@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/caarlos0/env/v6"
+	authConf "github.com/spitfy/urlshortener/internal/auth/config"
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 	loggerConf "github.com/spitfy/urlshortener/internal/logger/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
@@ -18,6 +19,8 @@ type Config struct {
 	Logger      loggerConf.Config
 	FileStorage storageConf.Config
 	DB          db.Config
+	Auth        authConf.Config
+	SecretKey   string
 }
 
 const (
@@ -27,10 +30,13 @@ const (
 	DefaultFileStorage     string = ""
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
 	DefaultDatabaseDsn     string = ""
+	SecretKey              string = "SecRetKey#!45"
 )
 
 func GetConfig() *Config {
-	var conf = &Config{}
+	var conf = &Config{
+		Auth: authConf.Config{SecretKey: SecretKey},
+	}
 	flag.StringVar(&conf.Handlers.ServerAddr, "a", DefaultServerAddr, "address of HTTP server")
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
