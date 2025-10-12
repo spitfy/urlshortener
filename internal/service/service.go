@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"net/url"
 	"runtime"
-
+	"sync"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"

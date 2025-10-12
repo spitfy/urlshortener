@@ -16,7 +16,7 @@ func NewFileObserver(filePath string) *FileObserver {
 	return &FileObserver{filePath: filePath}
 }
 
-func (o *FileObserver) Notify(ctx context.Context, event Event) error {
+func (o *FileObserver) Notify(_ context.Context, event Event) error {
 	if o.filePath == "" {
 		return nil
 	}
@@ -28,7 +28,9 @@ func (o *FileObserver) Notify(ctx context.Context, event Event) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	_, err = file.WriteString(event.Timestamp.Format(time.RFC3339) + " " + event.Method + " " + event.Hash + " " + event.Link + "\n")
 	return err
