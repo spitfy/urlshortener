@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/auth"
-	models
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"net/http"
