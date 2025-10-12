@@ -32,6 +32,6 @@ func (o *FileObserver) Notify(_ context.Context, event Event) error {
 		_ = file.Close()
 	}(file)
 
-	_, err = file.WriteString(event.Timestamp.Format(time.RFC3339) + " " + event.Method + " " + event.Hash + " " + event.Link + "\n")
+	_, err = file.WriteString(event.Timestamp.Format(time.RFC3339) + " " + string(event.Action) + " " + string(rune(event.UserID)) + " " + event.URL + "\n")
 	return err
 }

@@ -24,6 +24,12 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	hash := chi.URLParam(r, "hash")
 	if len(hash) == 0 || len(hash) > service.CharCnt {
 		w.WriteHeader(http.StatusBadRequest)
@@ -43,9 +49,9 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	h.service.NotifyObservers(r.Context(), audit.Event{
 		Timestamp: time.Now(),
-		Method:    r.Method,
-		Hash:      hash,
-		Link:      u.Link,
+		Action:    audit.Follow,
+		UserID:    userID,
+		URL:       u.Link,
 	})
 
 	w.Header().Add("Location", u.Link)
@@ -120,6 +126,13 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.service.NotifyObservers(r.Context(), audit.Event{
+		Timestamp: time.Now(),
+		Action:    audit.Shorten,
+		UserID:    userID,
+		URL:       string(body),
+	})
+
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(shortURL))
 }
@@ -161,6 +174,13 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not shorten URL", http.StatusInternalServerError)
 		return
 	}
+
+	h.service.NotifyObservers(r.Context(), audit.Event{
+		Timestamp: time.Now(),
+		Action:    audit.Shorten,
+		UserID:    userID,
+		URL:       req.URL,
+	})
 
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, "encoding error", http.StatusInternalServerError)

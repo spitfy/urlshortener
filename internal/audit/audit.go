@@ -5,11 +5,18 @@ import (
 	"time"
 )
 
+type Action string
+
+const (
+	Shorten Action = "shorten"
+	Follow  Action = "follow"
+)
+
 type Event struct {
-	Timestamp time.Time
-	Method    string
-	Hash      string
-	Link      string
+	Timestamp time.Time `json:"ts"`
+	Action    Action    `json:"action"`
+	UserID    int       `json:"user_id"`
+	URL       string    `json:"url"`
 }
 
 type Observer interface {
