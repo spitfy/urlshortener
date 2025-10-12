@@ -3,14 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/chi/v5"
+	"github.com/spitfy/urlshortener/internal/audit"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
-	"github.com/spitfy/urlshortener/internal/service"
+
 	"io"
 	"log"
 	"mime"
 	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/spitfy/urlshortener/internal/service"
 )
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +40,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusGone)
 		return
 	}
+
+	h.service.NotifyObservers(r.Context(), audit.Event{
+		Timestamp: time.Now(),
+		Method:    r.Method,
+		Hash:      hash,
+		Link:      u.Link,
+	})
 
 	w.Header().Add("Location", u.Link)
 	w.WriteHeader(http.StatusTemporaryRedirect)

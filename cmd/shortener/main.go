@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/logger"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"log"
@@ -24,6 +25,13 @@ func run() (err error) {
 	}
 	defer store.Close()
 	s := service.NewService(*cfg, store)
+
+	if cfg.Audit.AuditFile != "" {
+		s.AddObserver(audit.NewFileObserver(cfg.Audit.AuditFile))
+	}
+	if cfg.Audit.AuditURL != "" {
+		s.AddObserver(audit.NewHTTPObserver(cfg.Audit.AuditURL))
+	}
 
 	l, err := logger.Initialize(cfg.Logger.LogLevel)
 	if err != nil {

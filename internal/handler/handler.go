@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/auth"
+	models
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"net/http"
@@ -21,6 +23,8 @@ type ServiceShortener interface {
 	GetByUserID(ctx context.Context, userID int) ([]models.LinkPair, error)
 	CreateUser(ctx context.Context) (int, error)
 	DeleteEnqueue(ctx context.Context, req []string, userID int)
+	AddObserver(observer audit.Observer)
+	NotifyObservers(ctx context.Context, event audit.Event)
 }
 
 type RequestLogger interface {

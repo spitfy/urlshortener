@@ -5,11 +5,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"github.com/spitfy/urlshortener/internal/audit"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"log"
 	"math/big"
 	"net/url"
 	"runtime"
+
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -30,9 +32,11 @@ func RandString(n int) string {
 }
 
 type Service struct {
-	store   repository.Storer
-	config  config.Config
-	deleteQ chan repository.UserHash
+	store     repository.Storer
+	config    config.Config
+	deleteQ   chan repository.UserHash
+	observers []audit.Observer
+	mu        sync.Mutex
 }
 
 func NewService(cfg config.Config, store repository.Storer) *Service {
@@ -149,4 +153,21 @@ func (s *Service) makeURL(hash string) (string, error) {
 func isURL(str string) bool {
 	u, err := url.Parse(str)
 	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+func (s *Service) AddObserver(observer audit.Observer) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.observers = append(s.observers, observer)
+}
+
+func (s *Service) NotifyObservers(ctx context.Context, event audit.Event) {
+	s.mu.Lock()
+	observers := make([]audit.Observer, len(s.observers))
+	copy(observers, s.observers)
+	s.mu.Unlock()
+
+	for _, observer := range observers {
+		go observer.Notify(ctx, event)
+	}
 }
