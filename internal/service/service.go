@@ -168,6 +168,11 @@ func (s *Service) NotifyObservers(ctx context.Context, event audit.Event) {
 	s.mu.Unlock()
 
 	for _, observer := range observers {
-		go observer.Notify(ctx, event)
+		go func() {
+			err := observer.Notify(ctx, event)
+			if err != nil {
+				log.Println("audit error:", err)
+			}
+		}()
 	}
 }
