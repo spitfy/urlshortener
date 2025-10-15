@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/spitfy/urlshortener/internal/config"
-	models "github.com/spitfy/urlshortener/internal/model"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/spitfy/urlshortener/internal/config"
+	models "github.com/spitfy/urlshortener/internal/model"
 )
 
 type FileStore struct {

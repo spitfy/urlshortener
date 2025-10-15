@@ -2,13 +2,14 @@ package repository
 
 import (
 	"context"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/spitfy/urlshortener/internal/config"
 	repoConf "github.com/spitfy/urlshortener/internal/repository/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"reflect"
-	"testing"
 )
 
 var cfg = config.Config{

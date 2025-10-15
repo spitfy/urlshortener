@@ -5,13 +5,14 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/spitfy/urlshortener/internal/audit"
-	models "github.com/spitfy/urlshortener/internal/model"
 	"log"
 	"math/big"
 	"net/url"
 	"runtime"
 	"sync"
+
+	"github.com/spitfy/urlshortener/internal/audit"
+	models "github.com/spitfy/urlshortener/internal/model"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"

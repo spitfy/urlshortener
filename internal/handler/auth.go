@@ -2,9 +2,10 @@ package handler
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/spitfy/urlshortener/internal/auth"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
 func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {

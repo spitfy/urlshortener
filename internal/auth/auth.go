@@ -3,8 +3,9 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 var (

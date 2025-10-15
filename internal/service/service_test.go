@@ -1,8 +1,9 @@
 package service
 
 import (
-	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 	"testing"
+
+	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"

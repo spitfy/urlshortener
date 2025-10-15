@@ -2,11 +2,12 @@ package handler
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/auth"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
-	"net/http"
 )
 
 type Handler struct {

@@ -2,10 +2,11 @@ package config
 
 import (
 	"flag"
+	"log"
+
 	audit "github.com/spitfy/urlshortener/internal/audit/config"
 	"github.com/spitfy/urlshortener/internal/config/db"
 	storageConf "github.com/spitfy/urlshortener/internal/repository/config"
-	"log"
 
 	"github.com/caarlos0/env/v6"
 	authConf "github.com/spitfy/urlshortener/internal/auth/config"

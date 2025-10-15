@@ -1,10 +1,11 @@
 package main
 
 import (
+	"log"
+
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/logger"
 	"github.com/spitfy/urlshortener/internal/repository"
-	"log"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/handler"
