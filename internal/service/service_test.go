@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"testing"
 
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
@@ -70,6 +71,17 @@ func Test_isURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, isURL(tt.args.str), "isURL(%v)", tt.args.str)
+		})
+	}
+}
+
+func BenchmarkRandString(b *testing.B) {
+	lengths := []int{5, 10, 32, 64}
+	for _, n := range lengths {
+		b.Run(fmt.Sprintf("Len-%d", n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = RandString(n)
+			}
 		})
 	}
 }
