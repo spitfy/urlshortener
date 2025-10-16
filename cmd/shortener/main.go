@@ -26,6 +26,7 @@ func run() (err error) {
 		return err
 	}
 	defer store.Close()
+
 	s := service.NewService(*cfg, store)
 
 	if cfg.Audit.AuditFile != "" {
