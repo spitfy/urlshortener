@@ -1,0 +1,282 @@
+basePath: /
+definitions:
+  model.BatchCreateRequest:
+    properties:
+      correlation_id:
+        description: Идентификатор для сопоставления с ответом
+        type: string
+      original_url:
+        description: Оригинальный URL для сокращения
+        type: string
+    type: object
+  model.BatchCreateResponse:
+    properties:
+      correlation_id:
+        description: Идентификатор из запроса
+        type: string
+      short_url:
+        description: Сокращенный URL
+        type: string
+    type: object
+  model.Request:
+    properties:
+      url:
+        description: |-
+          Оригинальный URL для сокращения
+          Пример: "https://example.com/very/long/url/to/be/shortened"
+        type: string
+    type: object
+  model.Response:
+    properties:
+      result:
+        description: |-
+          Сокращенный URL
+          Пример: "http://short.ly/abc123"
+        type: string
+    type: object
+  model.URL:
+    properties:
+      original_url:
+        description: Оригинальный URL
+        type: string
+      short_url:
+        description: Сокращенный URL
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://example.com/support
+  description: API сервиса для сокращения URL-ссылок
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /:
+    post:
+      consumes:
+      - text/plain
+      description: Создает новый сокращенный URL из текстового тела запроса
+      parameters:
+      - description: Оригинальный URL для сокращения
+        in: body
+        name: url
+        required: true
+        schema:
+          type: string
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Создан новый сокращенный URL
+          schema:
+            type: string
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+        "409":
+          description: URL уже был сокращен ранее
+          schema:
+            type: string
+      summary: Сократить URL (текст)
+      tags:
+      - URL
+  /{hash}:
+    get:
+      description: Перенаправляет на оригинальный URL по сокращенному хешу
+      parameters:
+      - description: Хеш сокращенного URL
+        in: path
+        name: hash
+        required: true
+        type: string
+      responses:
+        "307":
+          description: Перенаправление на оригинальный URL
+          schema:
+            type: string
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+        "410":
+          description: URL был удален
+          schema:
+            type: string
+      summary: Получить оригинальный URL
+      tags:
+      - URL
+  /api/shorten:
+    post:
+      consumes:
+      - application/json
+      description: Создает новый сокращенный URL из JSON тела запроса
+      parameters:
+      - description: Запрос на сокращение URL
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Создан новый сокращенный URL
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+        "409":
+          description: URL уже был сокращен ранее
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Сократить URL (JSON)
+      tags:
+      - URL
+  /api/shorten/batch:
+    post:
+      consumes:
+      - application/json
+      description: Создает несколько сокращенных URL из пакетного запроса
+      parameters:
+      - description: Список URL для сокращения
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/model.BatchCreateRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Список созданных сокращенных URL
+          schema:
+            items:
+              $ref: '#/definitions/model.BatchCreateResponse'
+            type: array
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Пакетное сокращение URL
+      tags:
+      - URL
+  /api/user/urls:
+    delete:
+      consumes:
+      - application/json
+      description: Помечает указанные URL как удаленные (асинхронно)
+      parameters:
+      - description: Список хешей URL для удаления
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Запрос на удаление принят
+          schema:
+            type: string
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+      summary: Удалить URL
+      tags:
+      - URL
+    get:
+      description: Возвращает все сокращенные URL, созданные текущим пользователем
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список сокращенных URL
+          schema:
+            items:
+              $ref: '#/definitions/model.URL'
+            type: array
+        "204":
+          description: Нет сохраненных URL
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Получить URL пользователя
+      tags:
+      - User
+  /ping:
+    get:
+      description: Проверяет, что сервер работает и доступен
+      responses:
+        "200":
+          description: Сервер доступен
+          schema:
+            type: string
+        "500":
+          description: Сервер недоступен
+          schema:
+            type: string
+      summary: Проверить доступность сервера
+      tags:
+      - Health
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+  CookieAuth:
+    in: cookie
+    name: token
+    type: apiKey
+swagger: "2.0"

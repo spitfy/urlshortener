@@ -7,14 +7,17 @@ import (
 	"net/http"
 )
 
+// HTTPObserver отправляет события аудита на указанный HTTP endpoint
 type HTTPObserver struct {
 	url string
 }
 
+// NewHTTPObserver создает новый HTTPObserver с настраиваемым HTTP клиентом
 func NewHTTPObserver(url string) *HTTPObserver {
 	return &HTTPObserver{url: url}
 }
 
+// Notify отправляет событие аудита на HTTP endpoint
 func (o *HTTPObserver) Notify(ctx context.Context, event Event) error {
 	if o.url == "" {
 		return nil

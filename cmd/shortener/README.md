@@ -18,3 +18,7 @@
 `go run . -f "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/links.json"`
 
 Для дебага `DATABASE_DSN=postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable`
+
+## Для формирования ОА Swagger
+Выполнить в корне проекта
+`swag init --output ./docs --dir ./cmd/shortener,./internal/handler,./internal/model --parseInternal --parseDependency --parseDepth 3`

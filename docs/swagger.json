@@ -1,0 +1,418 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "API сервиса для сокращения URL-ссылок",
+        "title": "URL Shortener API",
+        "contact": {
+            "name": "API Support",
+            "url": "http://example.com/support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "post": {
+                "description": "Создает новый сокращенный URL из текстового тела запроса",
+                "consumes": [
+                    "text/plain"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "URL"
+                ],
+                "summary": "Сократить URL (текст)",
+                "parameters": [
+                    {
+                        "description": "Оригинальный URL для сокращения",
+                        "name": "url",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Создан новый сокращенный URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "URL уже был сокращен ранее",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/shorten": {
+            "post": {
+                "description": "Создает новый сокращенный URL из JSON тела запроса",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "URL"
+                ],
+                "summary": "Сократить URL (JSON)",
+                "parameters": [
+                    {
+                        "description": "Запрос на сокращение URL",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Создан новый сокращенный URL",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "URL уже был сокращен ранее",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/shorten/batch": {
+            "post": {
+                "description": "Создает несколько сокращенных URL из пакетного запроса",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "URL"
+                ],
+                "summary": "Пакетное сокращение URL",
+                "parameters": [
+                    {
+                        "description": "Список URL для сокращения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.BatchCreateRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Список созданных сокращенных URL",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.BatchCreateResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/urls": {
+            "get": {
+                "description": "Возвращает все сокращенные URL, созданные текущим пользователем",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Получить URL пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Список сокращенных URL",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.URL"
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "Нет сохраненных URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Помечает указанные URL как удаленные (асинхронно)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "URL"
+                ],
+                "summary": "Удалить URL",
+                "parameters": [
+                    {
+                        "description": "Список хешей URL для удаления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Запрос на удаление принят",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "Проверяет, что сервер работает и доступен",
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Проверить доступность сервера",
+                "responses": {
+                    "200": {
+                        "description": "Сервер доступен",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Сервер недоступен",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{hash}": {
+            "get": {
+                "description": "Перенаправляет на оригинальный URL по сокращенному хешу",
+                "tags": [
+                    "URL"
+                ],
+                "summary": "Получить оригинальный URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Хеш сокращенного URL",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Перенаправление на оригинальный URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизованный доступ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "410": {
+                        "description": "URL был удален",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.BatchCreateRequest": {
+            "type": "object",
+            "properties": {
+                "correlation_id": {
+                    "description": "Идентификатор для сопоставления с ответом",
+                    "type": "string"
+                },
+                "original_url": {
+                    "description": "Оригинальный URL для сокращения",
+                    "type": "string"
+                }
+            }
+        },
+        "model.BatchCreateResponse": {
+            "type": "object",
+            "properties": {
+                "correlation_id": {
+                    "description": "Идентификатор из запроса",
+                    "type": "string"
+                },
+                "short_url": {
+                    "description": "Сокращенный URL",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Request": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "description": "Оригинальный URL для сокращения\nПример: \"https://example.com/very/long/url/to/be/shortened\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Response": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "description": "Сокращенный URL\nПример: \"http://short.ly/abc123\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.URL": {
+            "type": "object",
+            "properties": {
+                "original_url": {
+                    "description": "Оригинальный URL",
+                    "type": "string"
+                },
+                "short_url": {
+                    "description": "Сокращенный URL",
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "token",
+            "in": "cookie"
+        }
+    }
+}

@@ -13,11 +13,27 @@ import (
 	"github.com/spitfy/urlshortener/internal/migration"
 )
 
+// DBStore реализует хранилище URL в PostgreSQL.
+// Пример создания:
+//
+//	conf := config.LoadConfig()
+//	store, err := newDBStore(conf)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer store.Close()
 type DBStore struct {
 	conf *config.Config
 	conn *pgxpool.Pool
 }
 
+// newDBStore создает новое подключение к БД и применяет миграции.
+// Пример:
+//
+//	store, err := newDBStore(config)
+//	if err != nil {
+//	    // обработка ошибки подключения
+//	}
 func newDBStore(conf *config.Config) (*DBStore, error) {
 	if err := migrate(conf); err != nil {
 		return nil, err
@@ -45,10 +61,20 @@ func migrate(conf *config.Config) error {
 	return nil
 }
 
+// Close закрывает соединение с БД.
+// Пример:
+//
+//	defer store.Close()
 func (s *DBStore) Close() {
 	s.conn.Close()
 }
 
+// Ping проверяет доступность БД.
+// Пример:
+//
+//	if err := store.Ping(); err != nil {
+//	    log.Println("Database unavailable:", err)
+//	}
 func (s *DBStore) Ping() error {
 	if err := s.conn.Ping(context.Background()); err != nil {
 		return err
@@ -56,6 +82,17 @@ func (s *DBStore) Ping() error {
 	return nil
 }
 
+// Add добавляет URL в базу данных. При попытке добавить существующий URL
+// возвращает ErrExistsURL с сохраненным хешем.
+// Пример:
+//
+//	hash, err := store.Add(ctx, URL{
+//	    Hash: "abc123",
+//	    Link: "https://example.com",
+//	}, 1)
+//	if errors.Is(err, ErrExistsURL) {
+//	    log.Println("URL already exists with hash:", hash)
+//	}
 func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) {
 	_, err := s.conn.Exec(ctx,
 		`INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)`,
@@ -82,6 +119,13 @@ func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) 
 	}
 }
 
+// GetByHash возвращает URL по его хешу.
+// Пример:
+//
+//	url, err := store.GetByHash(ctx, "abc123")
+//	if err != nil {
+//	    // обработка ошибки
+//	}
 func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 	var u URL
 	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted FROM urls WHERE hash = $1", hash)
@@ -92,6 +136,16 @@ func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 	return u, nil
 }
 
+// GetByUserID возвращает все URL пользователя.
+// Пример:
+//
+//	urls, err := store.GetByUserID(ctx, 1)
+//	if err != nil {
+//	    // обработка ошибки
+//	}
+//	for _, url := range urls {
+//	    fmt.Println(url.Hash, url.Link)
+//	}
 func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
 	rows, err := s.conn.Query(ctx, "SELECT original_url, hash FROM urls where user_id = $1", userID)
 	if err != nil {
@@ -116,6 +170,17 @@ func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
 	return res, nil
 }
 
+// BatchAdd добавляет несколько URL в рамках транзакции.
+// Пример:
+//
+//	urls := []URL{
+//	    {Hash: "abc", Link: "https://example.com"},
+//	    {Hash: "def", Link: "https://example.org"},
+//	}
+//	err := store.BatchAdd(ctx, urls, 1)
+//	if err != nil {
+//	    // обработка ошибки
+//	}
 func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	tx, err := s.conn.Begin(ctx)
 	if err != nil {
@@ -155,6 +220,13 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 	return nil
 }
 
+// BatchDelete помечает URL как удаленные для указанного пользователя.
+// Пример:
+//
+//	err := store.BatchDelete(ctx, UserHash{
+//	    UserID: 1,
+//	    Hash:   []string{"abc123", "def456"},
+//	})
 func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
 	tx, err := s.conn.Begin(ctx)
 	if err != nil {
@@ -177,6 +249,13 @@ func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
 	return nil
 }
 
+// CreateUser создает нового пользователя и возвращает его ID.
+// Пример:
+//
+//	userID, err := store.CreateUser(ctx)
+//	if err != nil {
+//	    // обработка ошибки
+//	}
 func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
 	var id int
 	err := s.conn.QueryRow(ctx,

@@ -7,15 +7,19 @@ import (
 	"time"
 )
 
+// FileObserver реализует Observer для записи событий в файл
 type FileObserver struct {
 	filePath string
 	mu       sync.Mutex
 }
 
+// NewFileObserver создает новый FileObserver
+// filePath: путь к файлу журнала. Если пустой - логирование отключено.
 func NewFileObserver(filePath string) *FileObserver {
 	return &FileObserver{filePath: filePath}
 }
 
+// Notify записывает событие в файл журнала
 func (o *FileObserver) Notify(_ context.Context, event Event) error {
 	if o.filePath == "" {
 		return nil
