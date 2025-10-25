@@ -93,11 +93,12 @@ func ExampleHandler_authMiddleware() {
 	w := httptest.NewRecorder()
 	protectedHandler.ServeHTTP(w, req)
 	res := w.Result()
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(res.Body)
+
+	body1, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+
 	fmt.Println("Status Code:", res.StatusCode)
-	fmt.Println("Body:", w.Body.String())
+	fmt.Println("Body:", string(body1))
 
 	// Тестируем запрос с валидным токеном в cookie
 	req2 := httptest.NewRequest("GET", "http://example.com", nil)
@@ -105,11 +106,12 @@ func ExampleHandler_authMiddleware() {
 	w2 := httptest.NewRecorder()
 	protectedHandler.ServeHTTP(w2, req2)
 	res2 := w2.Result()
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(res2.Body)
+
+	body2, _ := io.ReadAll(res2.Body)
+	res2.Body.Close()
+
 	fmt.Println("Status Code:", res2.StatusCode)
-	fmt.Println("Body:", w2.Body.String())
+	fmt.Println("Body:", string(body2))
 
 	// Output:
 	// Status Code: 200
