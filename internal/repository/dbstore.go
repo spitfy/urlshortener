@@ -24,7 +24,18 @@ import (
 //	defer store.Close()
 type DBStore struct {
 	conf *config.Config
-	conn *pgxpool.Pool
+	pool PGXPooler
+}
+
+type PGXPooler interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Ping(ctx context.Context) error
+	Close()
+	Begin(ctx context.Context) (pgx.Tx, error)
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }
 
 // newDBStore создает новое подключение к БД и применяет миграции.
@@ -66,7 +77,7 @@ func migrate(conf *config.Config) error {
 //
 //	defer store.Close()
 func (s *DBStore) Close() {
-	s.conn.Close()
+	s.pool.Close()
 }
 
 // Ping проверяет доступность БД.
@@ -76,7 +87,7 @@ func (s *DBStore) Close() {
 //	    log.Println("Database unavailable:", err)
 //	}
 func (s *DBStore) Ping() error {
-	if err := s.conn.Ping(context.Background()); err != nil {
+	if err := s.pool.Ping(context.Background()); err != nil {
 		return err
 	}
 	return nil
@@ -94,7 +105,7 @@ func (s *DBStore) Ping() error {
 //	    log.Println("URL already exists with hash:", hash)
 //	}
 func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) {
-	_, err := s.conn.Exec(ctx,
+	_, err := s.pool.Exec(ctx,
 		`INSERT INTO urls (hash, original_url, user_id) VALUES ($1, $2, $3)`,
 		url.Hash, url.Link, userID,
 	)
@@ -103,7 +114,7 @@ func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) 
 	switch {
 	case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
 		var hash string
-		err = s.conn.QueryRow(
+		err = s.pool.QueryRow(
 			ctx,
 			"SELECT hash FROM urls WHERE original_url=$1",
 			url.Link,
@@ -128,7 +139,7 @@ func (s *DBStore) Add(ctx context.Context, url URL, userID int) (string, error) 
 //	}
 func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 	var u URL
-	row := s.conn.QueryRow(ctx, "SELECT hash, original_url, is_deleted FROM urls WHERE hash = $1", hash)
+	row := s.pool.QueryRow(ctx, "SELECT hash, original_url, is_deleted FROM urls WHERE hash = $1", hash)
 	err := row.Scan(&u.Hash, &u.Link, &u.DeletedFlag)
 	if err != nil {
 		return u, err
@@ -147,7 +158,7 @@ func (s *DBStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 //	    fmt.Println(url.Hash, url.Link)
 //	}
 func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
-	rows, err := s.conn.Query(ctx, "SELECT original_url, hash FROM urls where user_id = $1", userID)
+	rows, err := s.pool.Query(ctx, "SELECT original_url, hash FROM urls where user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error select data: %w", err)
 	}
@@ -182,7 +193,7 @@ func (s *DBStore) GetByUserID(ctx context.Context, userID int) ([]URL, error) {
 //	    // обработка ошибки
 //	}
 func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
-	tx, err := s.conn.Begin(ctx)
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -228,7 +239,7 @@ func (s *DBStore) BatchAdd(ctx context.Context, urls []URL, userID int) error {
 //	    Hash:   []string{"abc123", "def456"},
 //	})
 func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
-	tx, err := s.conn.Begin(ctx)
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -258,7 +269,7 @@ func (s *DBStore) BatchDelete(ctx context.Context, uh UserHash) (err error) {
 //	}
 func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
 	var id int
-	err := s.conn.QueryRow(ctx,
+	err := s.pool.QueryRow(ctx,
 		`INSERT INTO users DEFAULT VALUES RETURNING id`).Scan(&id)
 	if err != nil {
 		return 0, err

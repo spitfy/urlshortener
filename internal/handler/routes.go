@@ -63,6 +63,6 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 }
 
 func getProjectRoot() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Dir(filepath.Dir(filename))
+	_, FileName, _, _ := runtime.Caller(0)
+	return filepath.Dir(filepath.Dir(FileName))
 }

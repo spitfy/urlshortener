@@ -41,6 +41,8 @@ var ErrExistsURL = errors.New("URL already exists")
 //   - DBStore (PostgreSQL)
 //   - FileStore (файловое хранилище)
 //   - MemStore (in-memory)
+//
+//go:generate mockgen -destination=storer_mock.go -package=order github.com/spitfy/urlshortener/internal/repository Storer
 type Storer interface {
 	// Add добавляет новую ссылку в хранилище.
 	// Возвращает ErrExistsURL если URL уже существует.

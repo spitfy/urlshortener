@@ -12,7 +12,7 @@ import (
 
 type Handler struct {
 	service ServiceShortener
-	auth    *auth.AuthManager
+	auth    auth.AuthManager
 }
 
 type ServiceShortener interface {
@@ -37,7 +37,7 @@ var allowedContent = map[string]bool{
 	"application/x-gzip": true,
 }
 
-func newHandler(s ServiceShortener, a *auth.AuthManager) *Handler {
+func newHandler(s ServiceShortener, a *auth.Manager) *Handler {
 	return &Handler{
 		service: s,
 		auth:    a,

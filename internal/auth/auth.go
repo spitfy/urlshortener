@@ -5,15 +5,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
 	ErrUnAuth = errors.New("unauthorized")
 )
 
-type AuthManager struct {
+type Manager struct {
 	secretKey []byte
+}
+
+type AuthManager interface {
+	GetTokenFromCookie(r *http.Request) (string, error)
+	ParseUserID(token string) (int, error)
+	CreateToken(w http.ResponseWriter, userID int) (string, error)
 }
 
 type Claims struct {
@@ -21,14 +27,14 @@ type Claims struct {
 	UserID int
 }
 
-func New(secret string) *AuthManager {
-	return &AuthManager{secretKey: []byte(secret)}
+func New(secret string) *Manager {
+	return &Manager{secretKey: []byte(secret)}
 }
 
-func (a *AuthManager) GetTokenFromCookie(r *http.Request) (string, error) {
+func (a *Manager) GetTokenFromCookie(r *http.Request) (string, error) {
 	cookie, err := r.Cookie("ID")
 	if err != nil {
-		if err == http.ErrNoCookie {
+		if errors.Is(err, http.ErrNoCookie) {
 			return "", fmt.Errorf("%w: cookie not found", ErrUnAuth)
 		}
 		return "", fmt.Errorf("%w: error reading cookie", ErrUnAuth)
@@ -39,14 +45,14 @@ func (a *AuthManager) GetTokenFromCookie(r *http.Request) (string, error) {
 	return cookie.Value, nil
 }
 
-func (a *AuthManager) BuildJWT(userID int) (string, error) {
+func (a *Manager) BuildJWT(userID int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
 	})
 	return token.SignedString(a.secretKey)
 }
 
-func (a *AuthManager) ParseUserID(tokenStr string) (int, error) {
+func (a *Manager) ParseUserID(tokenStr string) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -60,7 +66,7 @@ func (a *AuthManager) ParseUserID(tokenStr string) (int, error) {
 	return claims.UserID, nil
 }
 
-func (a *AuthManager) CreateToken(w http.ResponseWriter, userID int) (string, error) {
+func (a *Manager) CreateToken(w http.ResponseWriter, userID int) (string, error) {
 	tokenString, err := a.BuildJWT(userID)
 	if err != nil {
 		return "", err
