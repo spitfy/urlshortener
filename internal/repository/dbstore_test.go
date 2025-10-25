@@ -132,7 +132,7 @@ func (m *MockRows) Err() error {
 }
 
 func (m *MockRows) Next() bool {
-	if m.Next() != false {
+	if m.NextFunc != nil {
 		return m.NextFunc()
 	}
 	return false

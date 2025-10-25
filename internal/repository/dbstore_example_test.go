@@ -161,7 +161,7 @@ func ExampleStorer_CreateUser() {
 	userID, err := mockStorer.CreateUser(ctx)
 
 	if err != nil {
-		fmt.Printf("Error: %极\n", err)
+		fmt.Printf("Error: %s\n", err.Error())
 	} else {
 		fmt.Printf("Created user with ID: %d\n", userID)
 	}

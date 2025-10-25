@@ -8,6 +8,7 @@ import (
 	"github.com/spitfy/urlshortener/internal/auth"
 	models "github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
+	"io"
 	"net/http"
 	"net/http/httptest"
 )
@@ -92,6 +93,9 @@ func ExampleHandler_authMiddleware() {
 	w := httptest.NewRecorder()
 	protectedHandler.ServeHTTP(w, req)
 	res := w.Result()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
 	fmt.Println("Status Code:", res.StatusCode)
 	fmt.Println("Body:", w.Body.String())
 
@@ -101,6 +105,9 @@ func ExampleHandler_authMiddleware() {
 	w2 := httptest.NewRecorder()
 	protectedHandler.ServeHTTP(w2, req2)
 	res2 := w2.Result()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res2.Body)
 	fmt.Println("Status Code:", res2.StatusCode)
 	fmt.Println("Body:", w2.Body.String())
 
