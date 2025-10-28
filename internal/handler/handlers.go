@@ -3,12 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
 
-	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -100,7 +98,7 @@ func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	if err = encodeJSONBuffered(w, res); err != nil {
 		http.Error(w, "encoding error", http.StatusInternalServerError)
 		return
 	}
@@ -131,7 +129,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := readBodyLimited(r.Body, 10*1024)
 	defer func() {
 		_ = r.Body.Close()
 	}()
@@ -196,9 +194,13 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := readBodyLimited(r.Body, 100*1024)
+	if err != nil {
+		http.Error(w, "invalid json body", http.StatusBadRequest)
+		return
+	}
 	var req model.Request
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&req); err != nil {
+	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, "invalid json body", http.StatusBadRequest)
 		return
 	}
@@ -228,7 +230,7 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		URL:       req.URL,
 	})
 
-	if err := json.NewEncoder(w).Encode(res); err != nil {
+	if err := encodeJSONBuffered(w, res); err != nil {
 		http.Error(w, "encoding error", http.StatusInternalServerError)
 		return
 	}
@@ -280,7 +282,7 @@ func (h *Handler) BatchAdd(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	if err := json.NewEncoder(w).Encode(batchResponse); err != nil {
+	if err = encodeJSONBuffered(w, batchResponse); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

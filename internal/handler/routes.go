@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"github.com/spitfy/urlshortener/internal/gomodule"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"path/filepath"
-	"runtime"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spitfy/urlshortener/internal/auth"
@@ -21,8 +23,10 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 	router := newRouter(h, l)
 
 	server := &http.Server{
-		Addr:    cfg.Handlers.ServerAddr,
-		Handler: router,
+		Addr:         cfg.Handlers.ServerAddr,
+		Handler:      router,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	return server.ListenAndServe()
@@ -36,7 +40,9 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		f := filepath.Join(getProjectRoot(), "..", "docs", "swagger.json")
+		wd, _ := os.Getwd()
+		root, _ := gomodule.FindModuleRoot(wd)
+		f := filepath.Join(root, "docs", "swagger.json")
 		http.ServeFile(w, r, f)
 	})
 	r.Get("/swagger/*", httpSwagger.Handler(
@@ -60,9 +66,4 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	})
 
 	return r
-}
-
-func getProjectRoot() string {
-	_, FileName, _, _ := runtime.Caller(0)
-	return filepath.Dir(filepath.Dir(FileName))
 }

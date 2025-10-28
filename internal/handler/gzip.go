@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // compressWriter реализует интерфейс http.ResponseWriter и позволяет сжимать ответы в gzip.
@@ -38,9 +39,21 @@ func (cw *compressWriter) WriteHeader(statusCode int) {
 	cw.w.WriteHeader(statusCode)
 }
 
+var gzipWriterPool = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(nil)
+	},
+}
+
 // newCompressWriter создает новый compressWriter.
 func (cw *compressWriter) Close() error {
-	return cw.zw.Close()
+	if cw.zw != nil {
+		err := cw.zw.Close()
+		gzipWriterPool.Put(cw.zw)
+		cw.zw = nil
+		return err
+	}
+	return nil
 }
 
 // newCompressReader создает новый compressReader.
