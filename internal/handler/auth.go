@@ -2,11 +2,20 @@ package handler
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/spitfy/urlshortener/internal/auth"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
+// authMiddleware создает middleware для аутентификации пользователей.
+// Проверяет наличие валидного токена в cookie:
+//   - Если токен отсутствует или невалиден, создает нового пользователя и токен
+//   - Добавляет ID пользователя в контекст запроса
+//
+// В случае ошибок возвращает соответствующие HTTP статусы:
+//   - 401 Unauthorized при невалидных учетных данных
+//   - 500 Internal Server Error при проблемах создания пользователя
 func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userID int
@@ -40,6 +49,13 @@ func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// createUserAndToken создает нового пользователя и генерирует для него токен.
+// Возвращает:
+//   - userID: ID созданного пользователя
+//   - token: сгенерированный JWT токен
+//   - error: ошибка при создании пользователя или токена
+//
+// Устанавливает токен в cookie ответа.
 func (h *Handler) createUserAndToken(w http.ResponseWriter, r *http.Request) (int, string, error) {
 	userID, err := h.service.CreateUser(r.Context())
 	if err != nil {

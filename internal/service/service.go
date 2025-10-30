@@ -5,11 +5,14 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	models "github.com/spitfy/urlshortener/internal/model"
 	"log"
 	"math/big"
 	"net/url"
 	"runtime"
+	"sync"
+
+	"github.com/spitfy/urlshortener/internal/audit"
+	models "github.com/spitfy/urlshortener/internal/model"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -20,6 +23,7 @@ const (
 	CharCnt = 8
 )
 
+// RandString генерирует случайную строку заданной длины из набора символов chars.
 func RandString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
@@ -29,12 +33,16 @@ func RandString(n int) string {
 	return string(b)
 }
 
+// Service реализует бизнес-логику сервиса сокращения URL.
 type Service struct {
-	store   repository.Storer
-	config  config.Config
-	deleteQ chan repository.UserHash
+	store     repository.Storer
+	config    config.Config
+	deleteQ   chan repository.UserHash
+	observers []audit.Observer
+	mu        sync.Mutex
 }
 
+// NewService создает новый экземпляр Service.
 func NewService(cfg config.Config, store repository.Storer) *Service {
 	s := &Service{
 		store:   store,
@@ -50,6 +58,7 @@ func NewService(cfg config.Config, store repository.Storer) *Service {
 	return s
 }
 
+// runDeleteWorker обрабатывает задачи на удаление URL из хранилища.
 func (s *Service) runDeleteWorker() {
 	for uh := range s.deleteQ {
 		if err := s.store.BatchDelete(context.Background(), uh); err != nil {
@@ -58,6 +67,7 @@ func (s *Service) runDeleteWorker() {
 	}
 }
 
+// DeleteEnqueue добавляет хеши URL в очередь на удаление.
 func (s *Service) DeleteEnqueue(_ context.Context, hashes []string, userID int) {
 	s.deleteQ <- repository.UserHash{
 		UserID: userID,
@@ -65,6 +75,7 @@ func (s *Service) DeleteEnqueue(_ context.Context, hashes []string, userID int) 
 	}
 }
 
+// Add создает сокращенный URL для заданной ссылки.
 func (s *Service) Add(ctx context.Context, link string, userID int) (string, error) {
 	if !isURL(link) {
 		return "", errors.New("invalid url")
@@ -87,6 +98,7 @@ func (s *Service) Add(ctx context.Context, link string, userID int) (string, err
 	return shortURL, nil
 }
 
+// BatchAdd создает несколько сокращенных URL для списка ссылок.
 func (s *Service) BatchAdd(
 	ctx context.Context,
 	req []models.BatchCreateRequest,
@@ -103,14 +115,17 @@ func (s *Service) BatchAdd(
 	return res, nil
 }
 
+// GetByHash возвращает оригинальный URL по его хешу.
 func (s *Service) GetByHash(ctx context.Context, hash string) (repository.URL, error) {
 	return s.store.GetByHash(ctx, hash)
 }
 
+// Ping проверяет доступность хранилища.
 func (s *Service) Ping() error {
 	return s.store.Ping()
 }
 
+// GetByUserID возвращает все сокращенные URL пользователя.
 func (s *Service) GetByUserID(ctx context.Context, id int) ([]models.LinkPair, error) {
 	links, err := s.store.GetByUserID(ctx, id)
 	if err != nil {
@@ -138,6 +153,7 @@ func (s *Service) CreateUser(ctx context.Context) (int, error) {
 	return id, nil
 }
 
+// makeURL формирует полный сокращенный URL на основе хеша.
 func (s *Service) makeURL(hash string) (string, error) {
 	addr, err := url.JoinPath(s.config.Service.ServerURL, hash)
 	if err != nil {
@@ -146,7 +162,32 @@ func (s *Service) makeURL(hash string) (string, error) {
 	return addr, nil
 }
 
+// isURL проверяет, является ли строка валидным URL.
 func isURL(str string) bool {
 	u, err := url.Parse(str)
 	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+// AddObserver добавляет нового наблюдателя для аудита событий.
+func (s *Service) AddObserver(observer audit.Observer) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.observers = append(s.observers, observer)
+}
+
+// NotifyObservers уведомляет всех наблюдателей о событии.
+func (s *Service) NotifyObservers(ctx context.Context, event audit.Event) {
+	s.mu.Lock()
+	observers := make([]audit.Observer, len(s.observers))
+	copy(observers, s.observers)
+	s.mu.Unlock()
+
+	for _, observer := range observers {
+		go func() {
+			err := observer.Notify(ctx, event)
+			if err != nil {
+				log.Println("audit error:", err)
+			}
+		}()
+	}
 }

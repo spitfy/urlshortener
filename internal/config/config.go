@@ -2,9 +2,11 @@ package config
 
 import (
 	"flag"
+	"log"
+
+	audit "github.com/spitfy/urlshortener/internal/audit/config"
 	"github.com/spitfy/urlshortener/internal/config/db"
 	storageConf "github.com/spitfy/urlshortener/internal/repository/config"
-	"log"
 
 	"github.com/caarlos0/env/v6"
 	authConf "github.com/spitfy/urlshortener/internal/auth/config"
@@ -21,6 +23,7 @@ type Config struct {
 	DB          db.Config
 	Auth        authConf.Config
 	SecretKey   string
+	Audit       audit.Config
 }
 
 const (
@@ -42,6 +45,8 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
 	flag.StringVar(&conf.FileStorage.FileStoragePath, "f", DefaultFileStorage, "file storage path")
 	flag.StringVar(&conf.DB.DatabaseDsn, "d", DefaultDatabaseDsn, "database DSN address")
+	flag.StringVar(&conf.Audit.AuditFile, "audit-file", "", "AUDIT FILE path")
+	flag.StringVar(&conf.Audit.AuditURL, "audit-url", "", "AUDIT URL path")
 
 	flag.Parse()
 

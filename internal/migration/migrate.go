@@ -3,11 +3,12 @@ package migration
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/spitfy/urlshortener/internal/config"
-	"path/filepath"
 )
 
 type Migration struct {
