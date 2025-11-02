@@ -1,3 +1,4 @@
+// Package config предоставляет конфиги для системы аудита действий пользователей.
 package config
 
 type Config struct {

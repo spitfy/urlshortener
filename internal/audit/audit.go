@@ -1,3 +1,4 @@
+// Package audit предоставляет систему аудита действий пользователей.
 package audit
 
 import (

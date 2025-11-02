@@ -1,3 +1,4 @@
+// Package gomodule предоставляет утилиты для работы с Go модулями.
 package gomodule
 
 import (

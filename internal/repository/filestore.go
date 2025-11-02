@@ -82,24 +82,6 @@ func (s *FileStore) GetByHash(ctx context.Context, hash string) (URL, error) {
 	return s.MemStore.GetByHash(ctx, hash)
 }
 
-func (s *FileStore) getStore() (LinkList, error) {
-	_, err := s.file.Seek(0, io.SeekStart)
-	if err != nil {
-		return nil, err
-	}
-	var store LinkList
-	dec := json.NewDecoder(s.file)
-	err = dec.Decode(&store)
-	if err == io.EOF {
-		return store, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return store, nil
-}
-
 func (s *FileStore) init() (map[string]string, error) {
 	_, err := s.file.Seek(0, io.SeekStart)
 	if err != nil {

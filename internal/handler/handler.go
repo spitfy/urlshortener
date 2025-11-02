@@ -1,3 +1,4 @@
+// Package handler содержит основные HTTP-обработчики приложения.
 package handler
 
 import (

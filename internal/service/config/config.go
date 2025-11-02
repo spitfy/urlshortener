@@ -1,3 +1,4 @@
+// Package config содержит конфигурацию сервисного слоя.
 package config
 
 type Config struct {

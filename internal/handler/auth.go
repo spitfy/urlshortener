@@ -1,3 +1,4 @@
+// Package handler содержит HTTP-обработчики для аутентификации.
 package handler
 
 import (

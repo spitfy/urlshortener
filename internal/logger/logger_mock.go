@@ -1,3 +1,4 @@
+// Package logger содержит mock-реализации для тестирования.
 package logger
 
 import (

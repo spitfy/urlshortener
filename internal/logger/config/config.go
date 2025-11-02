@@ -1,3 +1,4 @@
+// Package config содержит конфигурацию для системы логирования.
 package config
 
 type Config struct {

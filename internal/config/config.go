@@ -1,3 +1,4 @@
+// Package config предоставляет общую систему конфигурации приложения.
 package config
 
 import (

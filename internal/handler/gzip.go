@@ -1,3 +1,4 @@
+// Package handler предоставляет middleware для сжатия GZIP.
 package handler
 
 import (
