@@ -8,7 +8,7 @@ import (
 )
 
 var Analyzer = &analysis.Analyzer{
-	Name:     "check for panic",
+	Name:     "check_panic",
 	Doc:      "Checks for prohibited function calls panic or exit",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
