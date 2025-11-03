@@ -3,7 +3,6 @@ package main
 import "log"
 
 func init() {
-	// Эти вызовы должны быть запрещены
 	log.Fatal("error in init") // want "prohibited use of log.Fatal or os.Exit outside main package main function"
 	panic("panic in init")     // want "prohibited use of panic()"
 }
