@@ -1,0 +1,272 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"go/ast"
+	"go/format"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"strings"
+	"text/template"
+)
+
+// StructInfo содержит информацию о структуре для генерации
+type StructInfo struct {
+	Name    string
+	Fields  []FieldInfo
+	Imports map[string]string
+}
+
+// FieldInfo содержит информацию о поле структуры
+type FieldInfo struct {
+	Name      string
+	Type      string
+	IsPointer bool
+	IsSlice   bool
+	IsMap     bool
+}
+
+// ProcessPackage обрабатывает один пакет
+func ProcessPackage(pkgPath string) error {
+	fset := token.NewFileSet()
+
+	// Парсим все Go файлы в пакете
+	pkgs, err := parser.ParseDir(fset, pkgPath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("failed to parse package: %w", err)
+	}
+
+	for _, pkg := range pkgs {
+		var structs []StructInfo
+		imports := make(map[string]string)
+
+		// Собираем импорты из всех файлов
+		for _, file := range pkg.Files {
+			collectImports(file, imports)
+		}
+
+		// Ищем структуры с комментарием //generate:reset
+		for _, file := range pkg.Files {
+			fileStructs := findResetableStructs(file)
+			structs = append(structs, fileStructs...)
+		}
+
+		if len(structs) > 0 {
+			// Генерируем файл reset.gen.go
+			if err := generateResetFile(pkgPath, pkg.Name, structs, imports); err != nil {
+				return fmt.Errorf("failed to generate reset file: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func collectImports(file *ast.File, imports map[string]string) {
+	for _, imp := range file.Imports {
+		if imp.Path != nil {
+			importPath := strings.Trim(imp.Path.Value, `"`)
+			var alias string
+			if imp.Name != nil {
+				alias = imp.Name.Name
+			} else {
+				alias = filepath.Base(importPath)
+			}
+			imports[alias] = importPath
+		}
+	}
+}
+
+func findResetableStructs(file *ast.File) []StructInfo {
+	var structs []StructInfo
+
+	ast.Inspect(file, func(n ast.Node) bool {
+		genDecl, ok := n.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			return true
+		}
+
+		// Проверяем комментарии
+		if genDecl.Doc == nil {
+			return true
+		}
+
+		hasResetComment := false
+		for _, comment := range genDecl.Doc.List {
+			if strings.Contains(comment.Text, "generate:reset") {
+				hasResetComment = true
+				break
+			}
+		}
+
+		if !hasResetComment {
+			return true
+		}
+
+		// Обрабатываем каждое определение типа в декларации
+		for _, spec := range genDecl.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+
+			structInfo := StructInfo{
+				Name:    typeSpec.Name.Name,
+				Imports: make(map[string]string),
+			}
+
+			// Обрабатываем поля структуры
+			if structType.Fields != nil {
+				for _, field := range structType.Fields.List {
+					if len(field.Names) == 0 {
+						continue // Пропускаем анонимные поля
+					}
+
+					for _, fieldName := range field.Names {
+						fieldInfo := FieldInfo{
+							Name: fieldName.Name,
+						}
+
+						// Определяем тип поля
+						switch t := field.Type.(type) {
+						case *ast.Ident:
+							fieldInfo.Type = t.Name
+						case *ast.StarExpr:
+							if ident, ok := t.X.(*ast.Ident); ok {
+								fieldInfo.Type = ident.Name
+								fieldInfo.IsPointer = true
+							}
+						case *ast.ArrayType:
+							fieldInfo.IsSlice = true
+							if ident, ok := t.Elt.(*ast.Ident); ok {
+								fieldInfo.Type = ident.Name
+							}
+						case *ast.MapType:
+							fieldInfo.IsMap = true
+							if keyIdent, ok := t.Key.(*ast.Ident); ok {
+								fieldInfo.Type = keyIdent.Name + "]" + getMapValueType(t.Value)
+							}
+						}
+
+						structInfo.Fields = append(structInfo.Fields, fieldInfo)
+					}
+				}
+			}
+
+			structs = append(structs, structInfo)
+		}
+
+		return true
+	})
+
+	return structs
+}
+
+func getMapValueType(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		if ident, ok := t.X.(*ast.Ident); ok {
+			return "*" + ident.Name
+		}
+	}
+	return "interface{}"
+}
+
+func generateResetFile(pkgPath, pkgName string, structs []StructInfo, imports map[string]string) error {
+	outputPath := filepath.Join(pkgPath, "reset.gen.go")
+
+	// Создаем FuncMap с вспомогательными функциями
+	funcMap := template.FuncMap{
+		"zeroValue": zeroValue,
+		"pathBase":  filepath.Base,
+	}
+
+	tmpl := template.Must(template.New("reset").Funcs(funcMap).Parse(resetTemplate))
+
+	var buf bytes.Buffer
+	data := map[string]interface{}{
+		"PackageName": pkgName,
+		"Structs":     structs,
+		"Imports":     imports,
+	}
+
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	// Форматируем код
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to format code: %w", err)
+	}
+
+	// Записываем в файл
+	if err := os.WriteFile(outputPath, formatted, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	fmt.Printf("Generated %s\n", outputPath)
+	return nil
+}
+
+// Вспомогательная функция для zeroValue
+func zeroValue(typeName string) string {
+	switch typeName {
+	case "int", "int8", "int16", "int32", "int64",
+		"uint", "uint8", "uint16", "uint32", "uint64",
+		"float32", "float64", "complex64", "complex128":
+		return "0"
+	case "string":
+		return `""`
+	case "bool":
+		return "false"
+	default:
+		return typeName + "{}"
+	}
+}
+
+const resetTemplate = `// Code generated by resetgen. DO NOT EDIT.
+
+package {{.PackageName}}
+
+import (
+{{- range $alias, $path := .Imports}}
+    {{if ne $alias (pathBase $path)}}{{$alias}} {{end}}"{{$path}}"
+{{- end}}
+)
+
+{{range .Structs}}
+func (rs *{{.Name}}) Reset() {
+    if rs == nil {
+        return
+    }
+    {{range .Fields}}
+    {{if .IsPointer}}
+    if rs.{{.Name}} != nil {
+        {{if or .IsSlice .IsMap}}
+        // Для указателей на slice/map нужна специальная обработка
+        {{else}}
+        *rs.{{.Name}} = {{zeroValue .Type}}
+        {{end}}
+    }
+    {{else if .IsSlice}}
+    rs.{{.Name}} = rs.{{.Name}}[:0]
+    {{else if .IsMap}}
+    clear(rs.{{.Name}})
+    {{else}}
+    rs.{{.Name}} = {{zeroValue .Type}}
+    {{end}}
+    {{end}}
+}
+{{end}}
+`
