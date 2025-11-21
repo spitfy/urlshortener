@@ -1,4 +1,4 @@
-// doc.go
+// Package model содержит доменные модели данных приложения.
 package model
 
 // URL документация для Swagger

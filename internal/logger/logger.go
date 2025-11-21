@@ -1,3 +1,4 @@
+// Package logger предоставляет систему логирования приложения.
 package logger
 
 import (
@@ -41,7 +42,7 @@ func Initialize(level string) (*Logger, error) {
 	return &Logger{Log: zl}, nil
 }
 
-// Сведения о запросах должны содержать URI, метод запроса и время, затраченное на его выполнение.
+// LogInfo Сведения о запросах должны содержать URI, метод запроса и время, затраченное на его выполнение.
 // Сведения об ответах должны содержать код статуса и размер содержимого ответа.
 func (l *Logger) LogInfo(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

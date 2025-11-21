@@ -1,3 +1,4 @@
+// Package config содержит конфигурацию репозиториев данных.
 package config
 
 type Config struct {

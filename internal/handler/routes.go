@@ -1,3 +1,4 @@
+// Package handler содержит маршрутизацию HTTP-запросов.
 package handler
 
 import (

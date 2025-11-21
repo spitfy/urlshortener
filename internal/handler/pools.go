@@ -1,3 +1,4 @@
+// Package handler предоставляет пулы объектов для обработчиков.
 package handler
 
 import (

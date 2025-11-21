@@ -22,3 +22,6 @@
 ## Для формирования ОА Swagger
 Выполнить в корне проекта
 `swag init --output ./docs --dir ./cmd/shortener,./internal/handler,./internal/model --parseInternal --parseDependency --parseDepth 3`
+
+### Запуск с флагами
+`go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" .`
