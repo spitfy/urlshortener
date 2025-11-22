@@ -34,6 +34,7 @@ const (
 	DefaultFileStorage     string = ""
 	DefaultFileStorageTest string = "/var/www/golang/yapracticum/go-advanced/urlshortener/storage/test.json"
 	DefaultDatabaseDsn     string = ""
+	DefaultHTTPS           bool   = false
 	SecretKey              string = "SecRetKey#!45"
 )
 
@@ -48,6 +49,7 @@ func GetConfig() *Config {
 	flag.StringVar(&conf.DB.DatabaseDsn, "d", DefaultDatabaseDsn, "database DSN address")
 	flag.StringVar(&conf.Audit.AuditFile, "audit-file", "", "AUDIT FILE path")
 	flag.StringVar(&conf.Audit.AuditURL, "audit-url", "", "AUDIT URL path")
+	flag.BoolVar(&conf.Handlers.EnableHTTPS, "s", DefaultHTTPS, "Enable HTTPS server")
 
 	flag.Parse()
 

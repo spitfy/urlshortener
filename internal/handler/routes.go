@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/spitfy/urlshortener/internal/gomodule"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
@@ -28,6 +29,22 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
+	}
+
+	if cfg.Handlers.EnableHTTPS {
+		certFile, err := certPath(cfg.Handlers.CertFile)
+		if err != nil {
+			return fmt.Errorf("certificate file not readable: %s — %w", certFile, err)
+		}
+		keyFile, err := certPath(cfg.Handlers.KeyFile)
+		if err != nil {
+			return fmt.Errorf("key file not readable: %s — %w", keyFile, err)
+		}
+		httpsAddr := ":" + cfg.Handlers.HTTPSPort
+		server.Addr = httpsAddr
+		fmt.Printf("Starting HTTPS server on %s\n", httpsAddr)
+
+		return server.ListenAndServeTLS(certFile, keyFile)
 	}
 
 	return server.ListenAndServe()
@@ -67,4 +84,24 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	})
 
 	return r
+}
+
+func certPath(cert string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	moduleRoot, err := gomodule.FindModuleRoot(wd)
+	if err != nil {
+		return "", err
+	}
+	certFile := filepath.Join(moduleRoot, cert)
+	file, err := os.Open(certFile)
+	if err != nil {
+		return "", err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+	return certFile, nil
 }
