@@ -5,8 +5,83 @@ import (
 	handlerConf "github.com/spitfy/urlshortener/internal/handler/config"
 	storageConf "github.com/spitfy/urlshortener/internal/repository/config"
 	serviceConf "github.com/spitfy/urlshortener/internal/service/config"
+	"os"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
+
+func Test_parseJSON(t *testing.T) {
+	tests := []struct {
+		name       string
+		configPath string
+		setup      func(t *testing.T) string
+		want       JSONConfig
+		wantErr    bool
+	}{
+		{
+			name:  "Valid config",
+			setup: func(t *testing.T) string { return createValidConfig(t) },
+			want: JSONConfig{
+				ServerAddress: "localhost:8080",
+				BaseURL:       "http://localhost:8080",
+			},
+			wantErr: false,
+		},
+
+		{
+			name:       "Non-existent file",
+			configPath: "/nonexistent/file.json",
+			want:       JSONConfig{},
+			wantErr:    true,
+		},
+
+		{
+			name:       "Empty path",
+			configPath: "",
+			want:       JSONConfig{},
+			wantErr:    false,
+		},
+
+		{
+			name:    "Corrupted JSON",
+			setup:   func(t *testing.T) string { return createCorruptedConfig(t) },
+			want:    JSONConfig{},
+			wantErr: true,
+		},
+
+		{
+			name:    "Empty JSON file",
+			setup:   func(t *testing.T) string { return createEmptyConfig(t) },
+			want:    JSONConfig{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var configPath string
+			if tt.setup != nil {
+				configPath = tt.setup(t)
+				defer func(name string) {
+					_ = os.Remove(name)
+				}(configPath)
+			} else {
+				configPath = tt.configPath
+			}
+
+			got, err := parseJSON(configPath)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
 
 func TestApplyJSONConfig(t *testing.T) {
 	tests := []struct {
@@ -261,4 +336,53 @@ func Test_setJSONBoolValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+// createValidConfig создает временный файл с валидным JSON
+func createValidConfig(t *testing.T) string {
+	t.Helper()
+
+	content := `{
+        "server_address": "localhost:8080",
+        "base_url": "http://localhost:8080",
+        "file_storage_path": "",
+        "database_dsn": "",
+        "enable_https": false
+    }`
+
+	return createTempFile(t, content)
+}
+
+// createCorruptedConfig создает файл с битым JSON
+func createCorruptedConfig(t *testing.T) string {
+	t.Helper()
+	return createTempFile(t, `{"server_address": "localhost:8080", "incomplete_json`)
+}
+
+// createEmptyConfig создает пустой JSON файл
+func createEmptyConfig(t *testing.T) string {
+	t.Helper()
+	return createTempFile(t, "")
+}
+
+// createTempFile универсальная функция создания временного файла
+func createTempFile(t *testing.T, content string) string {
+	t.Helper()
+
+	tmpfile, err := os.CreateTemp("", "test_config_*.json")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+
+	if content != "" {
+		if _, err := tmpfile.Write([]byte(content)); err != nil {
+			t.Fatalf("Failed to write to temp file: %v", err)
+		}
+	}
+
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temp file: %v", err)
+	}
+
+	return tmpfile.Name()
 }

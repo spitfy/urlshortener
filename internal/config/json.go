@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 )
 
@@ -28,7 +29,7 @@ func parseJSON(configPath string) (JSONConfig, error) {
 	}(file)
 
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	if err := decoder.Decode(&cfg); err != nil && err != io.EOF {
 		return cfg, err
 	}
 
