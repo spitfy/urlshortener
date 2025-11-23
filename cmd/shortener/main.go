@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/logger"
@@ -45,20 +51,65 @@ var (
 // @name token
 
 func main() {
+	var (
+		server *http.Server
+		err    error
+		quit   = make(chan os.Signal, 1)
+	)
+
+	cfg := config.GetConfig()
+	if server, err = run(cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
 	fmt.Printf("Build version: %s\n", buildVersion)
 	fmt.Printf("Build date: %s\n", buildDate)
 	fmt.Printf("Build commit: %s\n", buildCommit)
 
-	if err := run(); err != nil {
-		log.Fatal(err)
+	go func() {
+		var (
+			serveErr error
+			certFile string
+			keyFile  string
+		)
+		if cfg.Handlers.EnableHTTPS {
+			certFile, serveErr = handler.CertPath(cfg.Handlers.CertFile)
+			if err != nil {
+				log.Fatalf("certificate file not readable: %s — %v", certFile, serveErr)
+			}
+			keyFile, serveErr = handler.CertPath(cfg.Handlers.KeyFile)
+			if err != nil {
+				log.Fatalf("key file not readable: %s — %v", keyFile, serveErr)
+			}
+			serveErr = server.ListenAndServeTLS(certFile, keyFile)
+		} else {
+			serveErr = server.ListenAndServe()
+		}
+
+		if serveErr != nil && serveErr != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", serveErr)
+		}
+	}()
+
+	sig := <-quit
+	log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err = server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
+
+	log.Println("Server exited properly")
 }
 
-func run() (err error) {
-	cfg := config.GetConfig()
+func run(cfg *config.Config) (*http.Server, error) {
 	store, err := repository.CreateStore(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer store.Close()
 
@@ -73,7 +124,7 @@ func run() (err error) {
 
 	l, err := logger.Initialize(cfg.Logger.LogLevel)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return handler.Serve(*cfg, s, l)

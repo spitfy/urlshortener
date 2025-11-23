@@ -18,8 +18,8 @@ import (
 
 // Serve запускает HTTP-сервер с обработчиками URL shortener API.
 // Принимает конфигурацию, сервис сокращения URL и логгер запросов.
-// Возвращает ошибку в случае неудачного запуска сервера.
-func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
+// Возвращает сервер и ошибку в случае неудачного запуска сервера.
+func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) (*http.Server, error) {
 	a := auth.New(cfg.Auth.SecretKey)
 	h := newHandler(service, a)
 	router := newRouter(h, l)
@@ -32,22 +32,20 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) error {
 	}
 
 	if cfg.Handlers.EnableHTTPS {
-		certFile, err := certPath(cfg.Handlers.CertFile)
+		certFile, err := CertPath(cfg.Handlers.CertFile)
 		if err != nil {
-			return fmt.Errorf("certificate file not readable: %s — %w", certFile, err)
+			return server, fmt.Errorf("certificate file not readable: %s — %w", certFile, err)
 		}
-		keyFile, err := certPath(cfg.Handlers.KeyFile)
+		keyFile, err := CertPath(cfg.Handlers.KeyFile)
 		if err != nil {
-			return fmt.Errorf("key file not readable: %s — %w", keyFile, err)
+			return server, fmt.Errorf("key file not readable: %s — %w", keyFile, err)
 		}
 		httpsAddr := ":" + cfg.Handlers.HTTPSPort
 		server.Addr = httpsAddr
 		fmt.Printf("Starting HTTPS server on %s\n", httpsAddr)
-
-		return server.ListenAndServeTLS(certFile, keyFile)
 	}
 
-	return server.ListenAndServe()
+	return server, nil
 }
 
 // newRouter создает новый маршрутизатор с обработчиками для:
@@ -86,7 +84,7 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 	return r
 }
 
-func certPath(cert string) (string, error) {
+func CertPath(cert string) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
