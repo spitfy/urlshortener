@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -190,6 +191,9 @@ func TestManager_CreateToken(t *testing.T) {
 			assert.NotEmpty(t, tokenString)
 
 			cookies := recorder.Result().Cookies()
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(recorder.Result().Body)
 
 			var authCookie *http.Cookie
 			for _, cookie := range cookies {
