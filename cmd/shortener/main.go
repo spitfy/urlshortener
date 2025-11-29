@@ -52,14 +52,26 @@ var (
 
 func main() {
 	var (
-		server *http.Server
-		err    error
-		quit   = make(chan os.Signal, 1)
+		server    *http.Server
+		err       error
+		quit      = make(chan os.Signal, 1)
+		serverErr = make(chan error, 1)
 	)
 
 	cfg := config.GetConfig()
-	if server, err = run(cfg); err != nil {
+
+	store, err := repository.CreateStore(cfg)
+	if err != nil {
 		log.Fatal(err)
+	}
+
+	if server, err = run(cfg, store); err != nil {
+		store.Close()
+		log.Fatal(err)
+	}
+	if server == nil {
+		store.Close()
+		log.Fatal("Server is nil after run()")
 	}
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
@@ -76,12 +88,14 @@ func main() {
 		)
 		if cfg.Handlers.EnableHTTPS {
 			certFile, serveErr = handler.CertPath(cfg.Handlers.CertFile)
-			if err != nil {
-				log.Fatalf("certificate file not readable: %s — %v", certFile, serveErr)
+			if serveErr != nil {
+				serverErr <- fmt.Errorf("certificate file not readable: %s — %w", certFile, serveErr)
+				return
 			}
 			keyFile, serveErr = handler.CertPath(cfg.Handlers.KeyFile)
-			if err != nil {
-				log.Fatalf("key file not readable: %s — %v", keyFile, serveErr)
+			if serveErr != nil {
+				serverErr <- fmt.Errorf("key file not readable: %s — %w", keyFile, serveErr)
+				return
 			}
 			serveErr = server.ListenAndServeTLS(certFile, keyFile)
 		} else {
@@ -89,30 +103,40 @@ func main() {
 		}
 
 		if serveErr != nil && serveErr != http.ErrServerClosed {
-			log.Fatalf("Server failed: %v", serveErr)
+			serverErr <- serveErr
 		}
 	}()
 
-	sig := <-quit
-	log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
+	select {
+	case sig := <-quit:
+		log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
-	if err = server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		if err = server.Shutdown(ctx); err != nil {
+			log.Printf("Server forced to shutdown: %v", err)
+		}
+
+		store.Close()
+		log.Println("Server exited properly")
+
+	case err := <-serverErr:
+		log.Printf("Server failed: %v", err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if shutdownErr := server.Shutdown(ctx); shutdownErr != nil {
+			log.Printf("Error during emergency shutdown: %v", shutdownErr)
+		}
+
+		store.Close()
+		os.Exit(1)
 	}
-
-	log.Println("Server exited properly")
 }
 
-func run(cfg *config.Config) (*http.Server, error) {
-	store, err := repository.CreateStore(cfg)
-	if err != nil {
-		return nil, err
-	}
-	defer store.Close()
-
+func run(cfg *config.Config, store repository.Storer) (*http.Server, error) {
 	s := service.NewService(*cfg, store)
 
 	if cfg.Audit.AuditFile != "" {

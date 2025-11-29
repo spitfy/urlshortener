@@ -89,17 +89,16 @@ func CertPath(cert string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	moduleRoot, err := gomodule.FindModuleRoot(wd)
 	if err != nil {
 		return "", err
 	}
+
 	certFile := filepath.Join(moduleRoot, cert)
-	file, err := os.Open(certFile)
-	if err != nil {
+	if _, err = os.Stat(certFile); err != nil {
 		return "", err
 	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+
 	return certFile, nil
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -176,9 +177,9 @@ func TestManager_CreateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockWriter := NewMockResponseWriter()
+			recorder := httptest.NewRecorder()
 
-			tokenString, err := manager.CreateToken(mockWriter, tt.userID)
+			tokenString, err := manager.CreateToken(recorder, tt.userID)
 
 			if tt.wantError {
 				require.Error(t, err)
@@ -188,10 +189,25 @@ func TestManager_CreateToken(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotEmpty(t, tokenString)
 
-			cookies := mockWriter.Header().Get("Set-Cookie")
-			assert.Contains(t, cookies, "ID="+tokenString)
-			assert.Contains(t, cookies, "HttpOnly")
-			assert.Contains(t, cookies, "Path=/")
+			cookies := recorder.Result().Cookies()
+
+			var authCookie *http.Cookie
+			for _, cookie := range cookies {
+				if cookie.Name == "ID" {
+					authCookie = cookie
+					break
+				}
+			}
+
+			require.NotNil(t, authCookie, "Cookie 'ID' should be set")
+			assert.Equal(t, tokenString, authCookie.Value)
+			assert.True(t, authCookie.HttpOnly)
+			assert.Equal(t, "/", authCookie.Path)
+
+			setCookieHeader := recorder.Header().Get("Set-Cookie")
+			assert.Contains(t, setCookieHeader, "ID="+tokenString)
+			assert.Contains(t, setCookieHeader, "HttpOnly")
+			assert.Contains(t, setCookieHeader, "Path=/")
 
 			parsedUserID, err := manager.ParseUserID(tokenString)
 			require.NoError(t, err)
