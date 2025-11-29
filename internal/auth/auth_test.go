@@ -191,9 +191,13 @@ func TestManager_CreateToken(t *testing.T) {
 			assert.NotEmpty(t, tokenString)
 
 			res := recorder.Result()
+
 			defer func(Body io.ReadCloser) {
 				_ = Body.Close()
 			}(res.Body)
+
+			_, err = io.ReadAll(res.Body)
+			require.NoError(t, err)
 
 			cookies := res.Cookies()
 			var authCookie *http.Cookie
