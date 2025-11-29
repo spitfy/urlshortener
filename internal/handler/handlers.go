@@ -343,3 +343,17 @@ func (h *Handler) Ping(w http.ResponseWriter, _ *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *Handler) Stats(w http.ResponseWriter, r *http.Request) {
+	stats, err := h.service.Stats(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := encodeJSONBuffered(w, stats); err != nil {
+		http.Error(w, "encoding error", http.StatusInternalServerError)
+		return
+	}
+}

@@ -96,3 +96,8 @@ type BatchCreateResponse struct {
 	// Сокращенный URL
 	ShortURL string `json:"short_url"`
 }
+
+type Stats struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}

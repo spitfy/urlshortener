@@ -4,6 +4,7 @@ package handler
 import (
 	"fmt"
 	"github.com/spitfy/urlshortener/internal/gomodule"
+	"github.com/spitfy/urlshortener/internal/handler/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"net/http/pprof"
@@ -22,7 +23,7 @@ import (
 func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) (*http.Server, error) {
 	a := auth.New(cfg.Auth.SecretKey)
 	h := newHandler(service, a)
-	router := newRouter(h, l)
+	router := newRouter(h, l, &cfg)
 
 	server := &http.Server{
 		Addr:         cfg.Handlers.ServerAddr,
@@ -52,7 +53,7 @@ func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) (*http.
 // - API сокращения URL
 // - Профилирования (pprof)
 // Добавляет middleware для аутентификации, сжатия и логирования.
-func newRouter(h *Handler, l RequestLogger) *chi.Mux {
+func newRouter(h *Handler, l RequestLogger, cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
@@ -65,12 +66,15 @@ func newRouter(h *Handler, l RequestLogger) *chi.Mux {
 		httpSwagger.URL("/swagger.json"),
 	))
 
+	trustedSubnetMiddleware := middleware.TrustedSubnet(cfg)
+
 	r.Get("/ping", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Ping))))
 	r.Get("/{hash}", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Get))))
 	r.Get("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.GetByUserID))))
 	r.Delete("/api/user/urls", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Delete))))
 	r.Post("/api/shorten/batch", h.authMiddleware(gzipMiddleware(l.LogInfo(h.BatchAdd))))
 	r.Post("/api/shorten", h.authMiddleware(gzipMiddleware(l.LogInfo(h.ShortenURL))))
+	r.Post("/api/internal/stats", h.authMiddleware(gzipMiddleware(l.LogInfo(trustedSubnetMiddleware(h.Stats)))))
 	r.Post("/", h.authMiddleware(gzipMiddleware(l.LogInfo(h.Post))))
 
 	r.Group(func(r chi.Router) {

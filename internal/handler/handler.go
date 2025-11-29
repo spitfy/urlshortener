@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/auth"
-	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"net/http"
 )
@@ -17,14 +17,15 @@ type Handler struct {
 
 type ServiceShortener interface {
 	Add(ctx context.Context, link string, userID int) (string, error)
-	BatchAdd(ctx context.Context, req []models.BatchCreateRequest, userID int) ([]models.BatchCreateResponse, error)
+	BatchAdd(ctx context.Context, req []model.BatchCreateRequest, userID int) ([]model.BatchCreateResponse, error)
 	GetByHash(ctx context.Context, hash string) (repository.URL, error)
 	Ping() error
-	GetByUserID(ctx context.Context, userID int) ([]models.LinkPair, error)
+	GetByUserID(ctx context.Context, userID int) ([]model.LinkPair, error)
 	CreateUser(ctx context.Context) (int, error)
 	DeleteEnqueue(ctx context.Context, req []string, userID int)
 	AddObserver(observer audit.Observer)
 	NotifyObservers(ctx context.Context, event audit.Event)
+	Stats(ctx context.Context) (model.Stats, error)
 }
 
 type RequestLogger interface {

@@ -55,6 +55,7 @@ func GetConfig() *Config {
 	flag.BoolVar(&conf.Handlers.EnableHTTPS, "s", DefaultHTTPS, "Enable HTTPS server")
 	flag.StringVar(&configPath, "c", "", "path to config file")
 	flag.StringVar(&configPath, "config", "", "path to config file")
+	flag.StringVar(&conf.Handlers.TrustedSubnet, "t", "", "trusted subnet")
 
 	flag.Parse()
 

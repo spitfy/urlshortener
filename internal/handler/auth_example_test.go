@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/spitfy/urlshortener/internal/audit"
 	"github.com/spitfy/urlshortener/internal/auth"
-	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/model"
 	"github.com/spitfy/urlshortener/internal/repository"
 	"io"
 	"net/http"
@@ -34,7 +34,7 @@ func (m *mockAuth) ParseUserID(token string) (int, error) {
 	return 0, errors.New("invalid token")
 }
 
-func (m *mockAuth) CreateToken(w http.ResponseWriter, userID int) (string, error) {
+func (m *mockAuth) CreateToken(w http.ResponseWriter, _ int) (string, error) {
 	token := "valid-token"
 	http.SetCookie(w, &http.Cookie{Name: "ID", Value: token, Path: "/", HttpOnly: true})
 	return token, nil
@@ -43,15 +43,15 @@ func (m *mockAuth) CreateToken(w http.ResponseWriter, userID int) (string, error
 // Мок сервиса создания пользователя
 type mockService struct{}
 
-func (m *mockService) Add(_ context.Context, _ string, userID int) (string, error) {
+func (m *mockService) Add(_ context.Context, _ string, _ int) (string, error) {
 	return "", nil
 }
 
-func (m *mockService) BatchAdd(_ context.Context, _ []models.BatchCreateRequest, _ int) ([]models.BatchCreateResponse, error) {
-	return make([]models.BatchCreateResponse, 0), nil
+func (m *mockService) BatchAdd(_ context.Context, _ []model.BatchCreateRequest, _ int) ([]model.BatchCreateResponse, error) {
+	return make([]model.BatchCreateResponse, 0), nil
 }
 
-func (m *mockService) GetByHash(ctx context.Context, hash string) (repository.URL, error) {
+func (m *mockService) GetByHash(_ context.Context, _ string) (repository.URL, error) {
 	return repository.URL{}, nil
 }
 
@@ -59,21 +59,25 @@ func (m *mockService) Ping() error {
 	return nil
 }
 
-func (m *mockService) GetByUserID(ctx context.Context, userID int) ([]models.LinkPair, error) {
-	return make([]models.LinkPair, 0), nil
+func (m *mockService) GetByUserID(_ context.Context, _ int) ([]model.LinkPair, error) {
+	return make([]model.LinkPair, 0), nil
 }
 
-func (m *mockService) DeleteEnqueue(ctx context.Context, req []string, userID int) {
+func (m *mockService) DeleteEnqueue(_ context.Context, _ []string, _ int) {
 }
 
-func (m *mockService) AddObserver(observer audit.Observer) {
+func (m *mockService) AddObserver(_ audit.Observer) {
 }
 
-func (m *mockService) NotifyObservers(ctx context.Context, event audit.Event) {
+func (m *mockService) NotifyObservers(_ context.Context, _ audit.Event) {
 }
 
-func (m *mockService) CreateUser(ctx context.Context) (int, error) {
+func (m *mockService) CreateUser(_ context.Context) (int, error) {
 	return 100, nil
+}
+
+func (m *mockService) Stats(_ context.Context) (model.Stats, error) {
+	return model.Stats{URLs: 1, Users: 1}, nil
 }
 
 // Example-функция для authMiddleware

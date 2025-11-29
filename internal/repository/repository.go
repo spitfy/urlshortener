@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"github.com/spitfy/urlshortener/internal/model"
 
 	"github.com/spitfy/urlshortener/internal/config"
 )
@@ -87,6 +88,8 @@ type Storer interface {
 	// Пример:
 	//   userID, err := store.CreateUser(ctx)
 	CreateUser(ctx context.Context) (int, error)
+
+	Stats(ctx context.Context) (model.Stats, error)
 }
 
 // CreateStore создает соответствующую реализацию Storer на основе конфигурации.

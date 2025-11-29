@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/spitfy/urlshortener/internal/config"
-	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/model"
 )
 
 // FileStore реализует хранилище URL в файле с in-memory кэшем.
@@ -28,7 +28,7 @@ type FileStore struct {
 }
 
 // LinkList представляет список ссылок в формате JSON файла
-type LinkList []models.Link
+type LinkList []model.Link
 
 // NewMockStore создает мок-хранилище без привязки к файлу (только in-memory).
 // Пример:
@@ -161,7 +161,7 @@ func (s *FileStore) save() error {
 	store := make(LinkList, 0, len(s.s))
 	uuid := 1
 	for hash, l := range s.s {
-		ml := models.Link{
+		ml := model.Link{
 			UUID:        string(rune(uuid)),
 			ShortURL:    hash,
 			OriginalURL: l,
@@ -203,4 +203,8 @@ func (s *FileStore) CreateUser(_ context.Context) (int, error) {
 //	_ = store.BatchDelete(ctx, UserHash{...})
 func (s *FileStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
 	return nil
+}
+
+func (s *FileStore) Stats(ctx context.Context) (model.Stats, error) {
+	return s.MemStore.Stats(ctx)
 }
