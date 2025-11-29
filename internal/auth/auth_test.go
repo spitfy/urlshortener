@@ -190,11 +190,12 @@ func TestManager_CreateToken(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotEmpty(t, tokenString)
 
-			cookies := recorder.Result().Cookies()
+			res := recorder.Result()
 			defer func(Body io.ReadCloser) {
 				_ = Body.Close()
-			}(recorder.Result().Body)
+			}(res.Body)
 
+			cookies := res.Cookies()
 			var authCookie *http.Cookie
 			for _, cookie := range cookies {
 				if cookie.Name == "ID" {
