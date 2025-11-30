@@ -20,8 +20,7 @@ import (
 // Serve запускает HTTP-сервер с обработчиками URL shortener API.
 // Принимает конфигурацию, сервис сокращения URL и логгер запросов.
 // Возвращает сервер и ошибку в случае неудачного запуска сервера.
-func Serve(cfg config.Config, service ServiceShortener, l RequestLogger) (*http.Server, error) {
-	a := auth.New(cfg.Auth.SecretKey)
+func Serve(cfg config.Config, service ServiceShortener, l RequestLogger, a *auth.Manager) (*http.Server, error) {
 	h := newHandler(service, a)
 	router := newRouter(h, l, &cfg)
 

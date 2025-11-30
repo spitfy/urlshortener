@@ -8,4 +8,5 @@ type Config struct {
 	CertFile      string `env:"CERT_FILE" envDefault:"cert/cert.pem"`
 	KeyFile       string `env:"KEY_FILE" envDefault:"cert/key.pem"`
 	TrustedSubnet string `env:"TRUSTED_SUBNET"`
+	GRPCAddr      string `env:"GRPC_ADDRESS"`
 }
