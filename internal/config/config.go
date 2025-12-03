@@ -28,6 +28,7 @@ type Config struct {
 
 const (
 	DefaultServerAddr      string = ":8080"
+	DefaultGRPCAddr        string = ":50051"
 	DefaultServerURL       string = "http://localhost:8080"
 	DefaultLogLevel        string = "info"
 	DefaultFileStorage     string = ""
@@ -46,6 +47,7 @@ func GetConfig() *Config {
 	)
 
 	flag.StringVar(&conf.Handlers.ServerAddr, "a", DefaultServerAddr, "address of HTTP server")
+	flag.StringVar(&conf.Handlers.GRPCAddr, "grpc", DefaultGRPCAddr, "address of GRPC server")
 	flag.StringVar(&conf.Service.ServerURL, "b", DefaultServerURL, "URL of HTTP server")
 	flag.StringVar(&conf.Logger.LogLevel, "l", DefaultLogLevel, "Logger level")
 	flag.StringVar(&conf.FileStorage.FileStoragePath, "f", DefaultFileStorage, "file storage path")
@@ -55,6 +57,7 @@ func GetConfig() *Config {
 	flag.BoolVar(&conf.Handlers.EnableHTTPS, "s", DefaultHTTPS, "Enable HTTPS server")
 	flag.StringVar(&configPath, "c", "", "path to config file")
 	flag.StringVar(&configPath, "config", "", "path to config file")
+	flag.StringVar(&conf.Handlers.TrustedSubnet, "t", "", "trusted subnet")
 
 	flag.Parse()
 

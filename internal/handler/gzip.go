@@ -87,7 +87,7 @@ func (cr *compressReader) Close() error {
 
 // gzipMiddleware проверяет поддержку gzip и применяет сжатие/распаковку к запросу/ответу.
 func gzipMiddleware(h http.Handler) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			w.Header().Set("Content-Encoding", "gzip")
@@ -115,5 +115,5 @@ func gzipMiddleware(h http.Handler) http.HandlerFunc {
 		}
 
 		h.ServeHTTP(ow, r)
-	})
+	}
 }

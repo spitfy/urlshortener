@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/spitfy/urlshortener/internal/model"
 	"sync"
 )
 
@@ -117,4 +118,9 @@ func (s *MemStore) CreateUser(_ context.Context) (int, error) {
 //	err := store.BatchDelete(ctx, UserHash{UserID: 1, Hash: []string{"abc"}})
 func (s *MemStore) BatchDelete(_ context.Context, _ UserHash) (err error) {
 	return nil
+}
+
+// Stats статистика по количеству ссылок в сервисе
+func (s *MemStore) Stats(_ context.Context) (model.Stats, error) {
+	return model.Stats{URLs: len(s.s), Users: 1}, nil
 }

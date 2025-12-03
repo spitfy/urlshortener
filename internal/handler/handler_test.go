@@ -109,7 +109,7 @@ func TestHandler_Get(t *testing.T) {
 	_, _ = store.Add(ctx, repository.URL{Hash: "XXAABBOO", Link: "https://pkg.go.dev/"}, -1)
 	handler := newHandler(service.NewService(cfg, store), am)
 	l := logger.InitMock()
-	srv = httptest.NewServer(newRouter(handler, l))
+	srv = httptest.NewServer(newRouter(handler, l, &cfg))
 
 	tests := []struct {
 		name         string

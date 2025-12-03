@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/spitfy/urlshortener/internal/audit"
-	models "github.com/spitfy/urlshortener/internal/model"
+	"github.com/spitfy/urlshortener/internal/model"
 
 	"github.com/spitfy/urlshortener/internal/config"
 	"github.com/spitfy/urlshortener/internal/repository"
@@ -102,16 +102,16 @@ func (s *Service) Add(ctx context.Context, link string, userID int) (string, err
 // BatchAdd создает несколько сокращенных URL для списка ссылок.
 func (s *Service) BatchAdd(
 	ctx context.Context,
-	req []models.BatchCreateRequest,
+	req []model.BatchCreateRequest,
 	userID int,
-) ([]models.BatchCreateResponse, error) {
-	res := make([]models.BatchCreateResponse, 0, len(req))
+) ([]model.BatchCreateResponse, error) {
+	res := make([]model.BatchCreateResponse, 0, len(req))
 	for _, r := range req {
 		shortURL, err := s.Add(ctx, r.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, models.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
+		res = append(res, model.BatchCreateResponse{CorrelationID: r.CorrelationID, ShortURL: shortURL})
 	}
 	return res, nil
 }
@@ -127,18 +127,18 @@ func (s *Service) Ping() error {
 }
 
 // GetByUserID возвращает все сокращенные URL пользователя.
-func (s *Service) GetByUserID(ctx context.Context, id int) ([]models.LinkPair, error) {
+func (s *Service) GetByUserID(ctx context.Context, id int) ([]model.LinkPair, error) {
 	links, err := s.store.GetByUserID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]models.LinkPair, 0, len(links))
+	res := make([]model.LinkPair, 0, len(links))
 	for _, u := range links {
 		ShortURL, err := s.makeURL(u.Hash)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, models.LinkPair{
+		res = append(res, model.LinkPair{
 			ShortURL:    ShortURL,
 			OriginalURL: u.Link,
 		})
@@ -191,4 +191,9 @@ func (s *Service) NotifyObservers(ctx context.Context, event audit.Event) {
 			}
 		}()
 	}
+}
+
+// NotifyObservers уведомляет всех наблюдателей о событии.
+func (s *Service) Stats(ctx context.Context) (model.Stats, error) {
+	return s.store.Stats(ctx)
 }

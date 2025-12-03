@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/spitfy/urlshortener/internal/model"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
@@ -275,4 +276,16 @@ func (s *DBStore) CreateUser(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+func (s *DBStore) Stats(ctx context.Context) (model.Stats, error) {
+	var stats model.Stats
+	err := s.pool.QueryRow(ctx,
+		`select (SELECT count(1) from urls) as url, (select count(1) from users) as user`,
+	).Scan(&stats.URLs, &stats.Users)
+
+	if err != nil {
+		return stats, err
+	}
+	return stats, nil
 }
